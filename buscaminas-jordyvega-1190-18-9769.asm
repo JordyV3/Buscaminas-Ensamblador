@@ -27,11 +27,13 @@ data segment
 
   ;Mensaje impreso con cada nueva partida
   msjBienvenida1 db 10, 13, 10, 13, 10, 13
-              db " ±±±±±± ±±   ±±  ±±±±±± ±±±±±±± ±±±±±± ±±±   ±±± ±±±±±  ±±±   ± ±±±±±± ±±±±±±",10,13
-              db " ±±  ±± ±±   ±±  ±      ±±      ±    ± ± ±± ±± ±   ±    ± ±±  ± ±    ± ±     ", 10, 13
-              db " ±±±±   ±±   ±±  ±±±±±± ±±      ±±±±±± ±  ±±±  ±   ±    ±  ±± ± ±±±±±± ±±±±±±", 10, 13
-              db " ±±  ±± ±±   ±±       ± ±±      ±    ± ±       ±   ±    ±   ±±± ±    ±      ±", 10, 13
-              db " ±±±±±± ±±±±±±±  ±±±±±± ±±±±±±± ±    ± ±       ± ±±±±±  ±    ±± ±    ± ±±±±±±", 10, 13, '$'
+              db " ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½   ï¿½ï¿½  ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½   ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½  ï¿½ï¿½ï¿½   ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½",10,13
+              db " ï¿½ï¿½  ï¿½ï¿½ ï¿½ï¿½   ï¿½ï¿½  ï¿½      ï¿½ï¿½      ï¿½    ï¿½ ï¿½ ï¿½ï¿½ ï¿½ï¿½ ï¿½   ï¿½    ï¿½ ï¿½ï¿½  ï¿½ ï¿½    ï¿½ ï¿½     ", 10, 13
+              db " ï¿½ï¿½ï¿½ï¿½   ï¿½ï¿½   ï¿½ï¿½  ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½      ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½  ï¿½ï¿½ï¿½  ï¿½   ï¿½    ï¿½  ï¿½ï¿½ ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½", 10, 13
+              db " ï¿½ï¿½  ï¿½ï¿½ ï¿½ï¿½   ï¿½ï¿½       ï¿½ ï¿½ï¿½      ï¿½    ï¿½ ï¿½       ï¿½   ï¿½    ï¿½   ï¿½ï¿½ï¿½ ï¿½    ï¿½      ï¿½", 10, 13
+              db " ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½  ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½    ï¿½ ï¿½       ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½  ï¿½    ï¿½ï¿½ ï¿½    ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½", 10, 13, '$'
+  
+  msjBienvenida3 db 13,10,13,10, "Jordy Alexander Vega 1190'18'9769)? (s/n)$"  
   
   ;Mensaje que aparece unicamente al comenzar el juego o tras terminar y elegir jugar con un nuevo tablero
   msjBienvenida2 db 13,10,13,10, "Modo debug (con tablero precargado)? (s/n)$"  
@@ -85,7 +87,7 @@ data segment
   ;Mensaje que aparece al perder una partida
   mensajePerdida db "Has perdido la partida$"
   ;Mensaje que aparece al ganar una partida  
-  mensajeGanada db "Enhorabuena! Has ganado la partida$" 
+  mensajeGanada db " Felicidades! Has ganado la partida$" 
   
   ;Mensajes que aparece al terminar una partida para indicar al usuario que puede seleccionar: salir del juego o reiniciar con un nuevo tablero o el actual 
   mensajeSalir db "Salir del juego (s)$"
@@ -531,6 +533,9 @@ code segment
     je fin_inic_Tab
 
     lea dx, msjBienvenida2
+    call Imprimir
+
+    lea dx, msjBienvenida3
     call Imprimir
 
 
