@@ -20,25 +20,21 @@ YMENSAJECLIC EQU 23
 
 ;EQUIVALENCIAS USADAS PARA REPRESENTAR LOS COLORES DE TEXTO
 COLORBLOQUEADO EQU 47h
-COLORTAPADO EQU 18h
-COLORDESTAPADO EQU 72h  
-
-MOV AH, 06h    ; Scroll up function
-XOR AL, AL     ; Clear entire screen
-XOR CX, CX     ; Upper left corner CH=row, CL=column
-MOV DX, 184FH  ; lower right corner DH=row, DL=column 
-MOV BH, 1Eh    ; YellowOnBlue
-INT 10H
+COLORTAPADO EQU 07h
+COLORDESTAPADO EQU 97h
 
 data segment
 
   ;Mensaje impreso con cada nueva partida
   msjBienvenida1 db 10, 13, 10, 13, 10, 13
-                 db "Jordy Alexander Vega Aldana 1190-18-9769"
-   
+              db " ������ ��   ��  ������ ������� ������ ���   ��� �����  ���   � ������ ������",10,13
+              db " ��  �� ��   ��  �      ��      �    � � �� �� �   �    � ��  � �    � �     ", 10, 13
+              db " ����   ��   ��  ������ ��      ������ �  ���  �   �    �  �� � ������ ������", 10, 13
+              db " ��  �� ��   ��       � ��      �    � �       �   �    �   ��� �    �      �", 10, 13
+              db " ������ �������  ������ ������� �    � �       � �����  �    �� �    � ������", 10, 13, '$'
   
   ;Mensaje que aparece unicamente al comenzar el juego o tras terminar y elegir jugar con un nuevo tablero
-  msjBienvenida2 db 13,10,13,10, "Modo debug (con tablero precargado)? (s/n)$"  
+  msjBienvenida2 db 13,10,13,10, "Iniciar? (s)$"  
   
   ;Mensjae de espera que aparece unicamente al elegir no jugar con un tablero precargado
   msjInicializando db 10,13,"Inicializando tablero pseudo-aleatorio ;-)"
@@ -71,35 +67,20 @@ data segment
   NumMinas db 10 
   ;Almacenara la posicion (0...63) de las 10 minas cuya posicion calculamos aleatoreamente
   vectorMinas db 10 dup(0)
-  
-  ;Mensaje para indicar al usuario que puede jugar haciendo clic con el raton
-  EsperaClic db "Esperando clic de raton$"    
-  
+    
   ;Mensaje para borrar/sobreescribir el mensaje de "Esperando clic de raton" y el numero de casillas bloqueadas
   CadBorrar db "                        $" 
     
   ;Mensaje que precede al numero de casillas que el usuario ha bloqueado
   mensajeMinas db "Bloqueadas:$" 
   
-  ;Mensaje que precede al numero de minas bloqueadas
-  mensajeMinasJ db "Minas Bloqueadas: $" 
   
-  ;Mensaje que aparece cuando el usuario pulsa la 'X' de salir y selecciona "Salir del juego (s)"
-  mensajeSalida db "Cobarde!!!, Has abandonado la partida$"
-  ;Mensaje que aparece al perder una partida
-  mensajePerdida db "Has perdido la partida$"
   ;Mensaje que aparece al ganar una partida  
-  mensajeGanada db " Felicidades! Has ganado la partida$" 
+  mensajeGanada db "Has Perdido$" 
   
   ;Mensajes que aparece al terminar una partida para indicar al usuario que puede seleccionar: salir del juego o reiniciar con un nuevo tablero o el actual 
-  mensajeSalir db "Salir del juego (s)$"
-  mensajeNuevoJ1 db "Reiniciar con un nuevo tablero (n)$" 
-  mensajeNuevoJ2 db "Reiniciar con el tablero actual (a)$"
+  mensajeSalir db "Salir del juego (s)$" 
   
-  ;Mensaje que aparece durante la partida para indicar al usuario la forma de salir de la partida en cualquier momento
-  mensajeS db "X - Clic sobre la 'X' para salir de la partida$"
-
-
   ;Tablero de debug, para poder testear mas rapidamente condiciones
   ;-1 indica una mina en esa casilla
   ;0 una posicion vacia 
@@ -486,12 +467,6 @@ code segment
     call ColocarCursor
     lea dx, mensajeMinas
     call imprimir
-    
-    mov fila, 0       ;Mensaje para pulsar y salir de la partida actual 
-    mov colum, 0
-    call ColocarCursor
-    lea dx, mensajeS
-    call imprimir
       
     pop dx
     ret
@@ -523,7 +498,9 @@ code segment
     push dx              
     
     call BorrarPantalla
-
+    mov fila, 0
+    mov colum, 0
+    call ColocarCursor
     lea dx, msjBienvenida1
     call Imprimir
 
@@ -615,9 +592,6 @@ code segment
     mov colum, XMINAS 
     call ColocarCursor
 
-    lea dx, mensajeMinasJ
-    call imprimir
-    
     mov al, minasBloq    
     xor ah, ah   
     lea dx, cadenaEsc
@@ -631,22 +605,13 @@ code segment
     mov colum, XMENSAJES
     call ColocarCursor
 
-    cmp fin,1
-    je selec_msj_salida
-    
-    cmp fin,2
-    je selec_msj_perdida
+   
     
     ;sino
     lea dx, mensajeGanada 
     jmp imprime
 
-   selec_msj_salida: 
-    lea dx, mensajeSalida
-    jmp imprime
 
-   selec_msj_perdida: 
-    lea dx, mensajePerdida
 
    imprime:
     call imprimir
@@ -665,16 +630,11 @@ code segment
     mov colum, XMENSAJES
     call ColocarCursor
 
-    lea dx, mensajeNuevoJ1
-    call imprimir
-
 
     mov fila, YMENSAJES5  
     mov colum, XMENSAJES
     call ColocarCursor
 
-    lea dx, mensajeNuevoJ2
-    call imprimir
    
    rep_pide_tecla:
     call LeerTecla 
@@ -712,8 +672,6 @@ code segment
     mov colum, XMENSAJECLIC
     call ColocarCursor 
 
-    lea dx, EsperaClic
-    call Imprimir 
 
     call MostrarRaton
 

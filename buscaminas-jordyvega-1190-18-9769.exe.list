@@ -1,0 +1,1566 @@
+EMU8086 GENERATED LISTING. MACHINE CODE <- SOURCE.
+ 
+buscaminas-jordyvega-1190-18-9769.exe -- emu8086 assembler version: 4.08  
+ 
+[ 4/10/2021  --  12:14:20 ] 
+ 
+===================================================================================================
+[LINE]     LOC: MACHINE CODE                          SOURCE
+===================================================================================================
+ 
+[   1]        :                                       ;EQUIVALENCIAS USADAS PARA REPRESENTAR LAS POSICIONES DE LA IMPRESION DE CADENAS EN PANTALLA
+[   2]        :                                       ;ESTAS 4 ADEMAS SE USAN PARA CONTROLAR SI UN CLIC SE ENCUENTRA DENTRO DEL TABLERO
+[   3]        :                                       XTABLEROINI EQU 10
+[   4]        :                                       YTABLEROINI EQU 2
+[   5]        :                                       XTABLEROFIN EQU 26 ;XTABLEROINI+8*2
+[   6]        :                                       YTABLEROFIN EQU 18 ;YTABLEROINI+8*2
+[   7]        :                                       
+[   8]        :                                       XBLOQ EQU 35
+[   9]        :                                       YBLOQ EQU 4
+[  10]        :                                       XMINAS EQU 35
+[  11]        :                                       YMINAS EQU 8
+[  12]        :                                       XMENSAJES EQU 30
+[  13]        :                                       YMENSAJES1 EQU 2
+[  14]        :                                       YMENSAJES2 EQU 14
+[  15]        :                                       YMENSAJES3 EQU 16
+[  16]        :                                       YMENSAJES4 EQU 18
+[  17]        :                                       YMENSAJES5 EQU 20
+[  18]        :                                       XMENSAJECLIC EQU 10
+[  19]        :                                       YMENSAJECLIC EQU 23
+[  20]        :                                       
+[  21]        :                                       ;EQUIVALENCIAS USADAS PARA REPRESENTAR LOS COLORES DE TEXTO
+[  22]        :                                       COLORBLOQUEADO EQU 47h
+[  23]        :                                       COLORTAPADO EQU 18h
+[  24]        :                                       COLORDESTAPADO EQU 72h
+[  25]        :                                       
+[  26]    0000: B4 06                                 MOV AH, 06h    ; Scroll up function
+[  27]    0002: 32 C0                                 XOR AL, AL     ; Clear entire screen
+[  28]    0004: 33 C9                                 XOR CX, CX     ; Upper left corner CH=row, CL=column
+[  29]    0006: BA 4F 18                              MOV DX, 184FH  ; lower right corner DH=row, DL=column
+[  30]    0009: B7 1E                                 MOV BH, 1Eh    ; YellowOnBlue
+[  31]    000B: CD 10                                 INT 10H
+[  32]        :                                       
+[  33]        :                                       data segment
+[  34]        :                                       
+[  35]        :                                       ;Mensaje impreso con cada nueva partida
+[  36]    0010: 0A 0D 0A 0D 0A 0D                     msjBienvenida1 db 10, 13, 10, 13, 10, 13
+[  37]    0016: 4A 6F 72 64 79 20 41 6C 65 78 61 6E   db "Jordy Alexander Vega Aldana 1190-18-9769"
+                64 65 72 20 56 65 67 61 20 41 6C 64 
+                61 6E 61 20 31 31 39 30 2D 31 38 2D 
+                39 37 36 39                         
+[  38]        :                                       
+[  39]        :                                       
+[  40]        :                                       ;Mensaje que aparece unicamente al comenzar el juego o tras terminar y elegir jugar con un nuevo tablero
+[  41]    003E: 0D 0A 0D 0A 4D 6F 64 6F 20 64 65 62   msjBienvenida2 db 13,10,13,10, "Modo debug (con tablero precargado)? (s/n)$"
+                75 67 20 28 63 6F 6E 20 74 61 62 6C 
+                65 72 6F 20 70 72 65 63 61 72 67 61 
+                64 6F 29 3F 20 28 73 2F 6E 29 24    
+[  42]        :                                       
+[  43]        :                                       ;Mensjae de espera que aparece unicamente al elegir no jugar con un tablero precargado
+[  44]    006D: 0A 0D 49 6E 69 63 69 61 6C 69 7A 61   msjInicializando db 10,13,"Inicializando tablero pseudo-aleatorio ;-)"
+                6E 64 6F 20 74 61 62 6C 65 72 6F 20 
+                70 73 65 75 64 6F 2D 61 6C 65 61 74 
+                6F 72 69 6F 20 3B 2D 29             
+[  45]    0099: 0A 0D 4D 65 20 6C 6C 65 76 61 20 75   db 10,13,"Me lleva un momentito...$"
+                6E 20 6D 6F 6D 65 6E 74 69 74 6F 2E 
+                2E 2E 24                            
+[  46]        :                                       
+[  47]        :                                       ;Dibujo del tablero de juego
+[  48]    00B4: 0A 0D 0A 0D                           dibTablero db 10,13,10,13,
+[  49]    00B8: 20 20 20 20 20 20 20 20 20 20 2B 2D   db '          +-+-+-+-+-+-+-+-+',10,13,
+                2B 2D 2B 2D 2B 2D 2B 2D 2B 2D 2B 2D 
+                2B 2D 2B 0A 0D                      
+[  50]    00D5: 20 20 20 20 20 20 20 20 20 20 7C 20   db '          | | | | | | | | |',10,13,
+                7C 20 7C 20 7C 20 7C 20 7C 20 7C 20 
+                7C 20 7C 0A 0D                      
+[  51]    00F2: 20 20 20 20 20 20 20 20 20 20 2B 2D   db '          +-+-+-+-+-+-+-+-+',10,13,
+                2B 2D 2B 2D 2B 2D 2B 2D 2B 2D 2B 2D 
+                2B 2D 2B 0A 0D                      
+[  52]    010F: 20 20 20 20 20 20 20 20 20 20 7C 20   db '          | | | | | | | | |',10,13,
+                7C 20 7C 20 7C 20 7C 20 7C 20 7C 20 
+                7C 20 7C 0A 0D                      
+[  53]    012C: 20 20 20 20 20 20 20 20 20 20 2B 2D   db '          +-+-+-+-+-+-+-+-+',10,13,
+                2B 2D 2B 2D 2B 2D 2B 2D 2B 2D 2B 2D 
+                2B 2D 2B 0A 0D                      
+[  54]    0149: 20 20 20 20 20 20 20 20 20 20 7C 20   db '          | | | | | | | | |',10,13,
+                7C 20 7C 20 7C 20 7C 20 7C 20 7C 20 
+                7C 20 7C 0A 0D                      
+[  55]    0166: 20 20 20 20 20 20 20 20 20 20 2B 2D   db '          +-+-+-+-+-+-+-+-+',10,13,
+                2B 2D 2B 2D 2B 2D 2B 2D 2B 2D 2B 2D 
+                2B 2D 2B 0A 0D                      
+[  56]    0183: 20 20 20 20 20 20 20 20 20 20 7C 20   db '          | | | | | | | | |',10,13,
+                7C 20 7C 20 7C 20 7C 20 7C 20 7C 20 
+                7C 20 7C 0A 0D                      
+[  57]    01A0: 20 20 20 20 20 20 20 20 20 20 2B 2D   db '          +-+-+-+-+-+-+-+-+',10,13,
+                2B 2D 2B 2D 2B 2D 2B 2D 2B 2D 2B 2D 
+                2B 2D 2B 0A 0D                      
+[  58]    01BD: 20 20 20 20 20 20 20 20 20 20 7C 20   db '          | | | | | | | | |',10,13,
+                7C 20 7C 20 7C 20 7C 20 7C 20 7C 20 
+                7C 20 7C 0A 0D                      
+[  59]    01DA: 20 20 20 20 20 20 20 20 20 20 2B 2D   db '          +-+-+-+-+-+-+-+-+',10,13,
+                2B 2D 2B 2D 2B 2D 2B 2D 2B 2D 2B 2D 
+                2B 2D 2B 0A 0D                      
+[  60]    01F7: 20 20 20 20 20 20 20 20 20 20 7C 20   db '          | | | | | | | | |',10,13,
+                7C 20 7C 20 7C 20 7C 20 7C 20 7C 20 
+                7C 20 7C 0A 0D                      
+[  61]    0214: 20 20 20 20 20 20 20 20 20 20 2B 2D   db '          +-+-+-+-+-+-+-+-+',10,13,
+                2B 2D 2B 2D 2B 2D 2B 2D 2B 2D 2B 2D 
+                2B 2D 2B 0A 0D                      
+[  62]    0231: 20 20 20 20 20 20 20 20 20 20 7C 20   db '          | | | | | | | | |',10,13,
+                7C 20 7C 20 7C 20 7C 20 7C 20 7C 20 
+                7C 20 7C 0A 0D                      
+[  63]    024E: 20 20 20 20 20 20 20 20 20 20 2B 2D   db '          +-+-+-+-+-+-+-+-+',10,13,
+                2B 2D 2B 2D 2B 2D 2B 2D 2B 2D 2B 2D 
+                2B 2D 2B 0A 0D                      
+[  64]    026B: 20 20 20 20 20 20 20 20 20 20 7C 20   db '          | | | | | | | | |',10,13,
+                7C 20 7C 20 7C 20 7C 20 7C 20 7C 20 
+                7C 20 7C 0A 0D                      
+[  65]    0288: 20 20 20 20 20 20 20 20 20 20 2B 2D   db '          +-+-+-+-+-+-+-+-+','$'
+                2B 2D 2B 2D 2B 2D 2B 2D 2B 2D 2B 2D 
+                2B 2D 2B 24                         
+[  66]        :                                       
+[  67]        :                                       ;Numero de casillas del juego (8x8). Es DW por facilitar codigo (e.g., mov cx, TotalCasillas)
+[  68]    02A4: 40 00                                 TotalCasillas dw 64
+[  69]        :                                       
+[  70]        :                                       ;Numero de minas que se crean con cada nueva partida
+[  71]    02A6: 0A                                    NumMinas db 10
+[  72]        :                                       ;Almacenara la posicion (0...63) de las 10 minas cuya posicion calculamos aleatoreamente
+[  73]    02A7: 00 00 00 00 00 00 00 00 00 00         vectorMinas db 10 dup(0)
+[  74]        :                                       
+[  75]        :                                       ;Mensaje para indicar al usuario que puede jugar haciendo clic con el raton
+[  76]    02B1: 45 73 70 65 72 61 6E 64 6F 20 63 6C   EsperaClic db "Esperando clic de raton$"
+                69 63 20 64 65 20 72 61 74 6F 6E 24 
+                                                    
+[  77]        :                                       
+[  78]        :                                       ;Mensaje para borrar/sobreescribir el mensaje de "Esperando clic de raton" y el numero de casillas bloqueadas
+[  79]    02C9: 20 20 20 20 20 20 20 20 20 20 20 20   CadBorrar db "                        $"
+                20 20 20 20 20 20 20 20 20 20 20 20 
+                24                                  
+[  80]        :                                       
+[  81]        :                                       ;Mensaje que precede al numero de casillas que el usuario ha bloqueado
+[  82]    02E2: 42 6C 6F 71 75 65 61 64 61 73 3A 24   mensajeMinas db "Bloqueadas:$"
+                                                    
+[  83]        :                                       
+[  84]        :                                       ;Mensaje que precede al numero de minas bloqueadas
+[  85]    02EE: 4D 69 6E 61 73 20 42 6C 6F 71 75 65   mensajeMinasJ db "Minas Bloqueadas: $"
+                61 64 61 73 3A 20 24                
+[  86]        :                                       
+[  87]        :                                       ;Mensaje que aparece cuando el usuario pulsa la 'X' de salir y selecciona "Salir del juego (s)"
+[  88]    0301: 43 6F 62 61 72 64 65 21 21 21 2C 20   mensajeSalida db "Cobarde!!!, Has abandonado la partida$"
+                48 61 73 20 61 62 61 6E 64 6F 6E 61 
+                64 6F 20 6C 61 20 70 61 72 74 69 64 
+                61 24                               
+[  89]        :                                       ;Mensaje que aparece al perder una partida
+[  90]    0327: 48 61 73 20 70 65 72 64 69 64 6F 20   mensajePerdida db "Has perdido la partida$"
+                6C 61 20 70 61 72 74 69 64 61 24    
+[  91]        :                                       ;Mensaje que aparece al ganar una partida
+[  92]    033E: 20 46 65 6C 69 63 69 64 61 64 65 73   mensajeGanada db " Felicidades! Has ganado la partida$"
+                21 20 48 61 73 20 67 61 6E 61 64 6F 
+                20 6C 61 20 70 61 72 74 69 64 61 24 
+                                                    
+[  93]        :                                       
+[  94]        :                                       ;Mensajes que aparece al terminar una partida para indicar al usuario que puede seleccionar: salir del juego o reiniciar con un nuevo tablero o el actual
+[  95]    0362: 53 61 6C 69 72 20 64 65 6C 20 6A 75   mensajeSalir db "Salir del juego (s)$"
+                65 67 6F 20 28 73 29 24             
+[  96]    0376: 52 65 69 6E 69 63 69 61 72 20 63 6F   mensajeNuevoJ1 db "Reiniciar con un nuevo tablero (n)$"
+                6E 20 75 6E 20 6E 75 65 76 6F 20 74 
+                61 62 6C 65 72 6F 20 28 6E 29 24    
+[  97]    0399: 52 65 69 6E 69 63 69 61 72 20 63 6F   mensajeNuevoJ2 db "Reiniciar con el tablero actual (a)$"
+                6E 20 65 6C 20 74 61 62 6C 65 72 6F 
+                20 61 63 74 75 61 6C 20 28 61 29 24 
+                                                    
+[  98]        :                                       
+[  99]        :                                       ;Mensaje que aparece durante la partida para indicar al usuario la forma de salir de la partida en cualquier momento
+[ 100]    03BD: 58 20 2D 20 43 6C 69 63 20 73 6F 62   mensajeS db "X - Clic sobre la 'X' para salir de la partida$"
+                72 65 20 6C 61 20 27 58 27 20 70 61 
+                72 61 20 73 61 6C 69 72 20 64 65 20 
+                6C 61 20 70 61 72 74 69 64 61 24    
+[ 101]        :                                       
+[ 102]        :                                       
+[ 103]        :                                       ;Tablero de debug, para poder testear mas rapidamente condiciones
+[ 104]        :                                       ;-1 indica una mina en esa casilla
+[ 105]        :                                       ;0 una posicion vacia
+[ 106]        :                                       ;cualquier otro numero se refiere al contador de minas alrededor de esa casilla
+[ 107]    03EC: 00 00 00 00 00 00 00 00               MtableroDBG db 0, 0, 0, 0, 0, 0, 0, 0
+[ 108]    03F4: 00 00 00 00 00 00 00 00               db 0, 0, 0, 0, 0, 0, 0, 0
+[ 109]    03FC: 01 01 01 00 00 00 00 00               db 1, 1, 1, 0, 0, 0, 0, 0
+[ 110]    0404: 01 FF 01 00 00 00 00 00               db 1, -1, 1, 0, 0, 0, 0, 0
+[ 111]    040C: 02 02 02 00 00 00 00 00               db 2, 2, 2, 0, 0, 0, 0, 0
+[ 112]    0414: 02 FF 02 00 01 01 01 00               db 2, -1, 2, 0, 1, 1, 1, 0
+[ 113]    041C: 03 FF 05 03 04 FF 03 01               db 3, -1, 5, 3, 4, -1, 3, 1
+[ 114]    0424: 02 FF FF FF FF FF FF 01               db 2, -1, -1, -1, -1, -1, -1, 1
+[ 115]        :                                       ;Tablero de juego
+[ 116]    042C: 00 00 00 00 00 00 00 00 00 00 00 00   Mtablero db 64 dup(0)
+                00 00 00 00 00 00 00 00 00 00 00 00 
+                00 00 00 00 00 00 00 00 00 00 00 00 
+                00 00 00 00 00 00 00 00 00 00 00 00 
+                00 00 00 00 00 00 00 00 00 00 00 00 
+                00 00 00 00                         
+[ 117]        :                                       
+[ 118]        :                                       ;Almacena las posiciones ya destapadas por el usuario
+[ 119]        :                                       ;0 indica no destapada
+[ 120]        :                                       ;1 indica destapada
+[ 121]    046C: 00 00 00 00 00 00 00 00 00 00 00 00   Destapado db 64 DUP(0)
+                00 00 00 00 00 00 00 00 00 00 00 00 
+                00 00 00 00 00 00 00 00 00 00 00 00 
+                00 00 00 00 00 00 00 00 00 00 00 00 
+                00 00 00 00 00 00 00 00 00 00 00 00 
+                00 00 00 00                         
+[ 122]        :                                       
+[ 123]        :                                       ;Almacena las posiciones bloqueadas por el usuario
+[ 124]        :                                       ;0 indica no bloqueada
+[ 125]        :                                       ;1 indica bloqueada
+[ 126]    04AC: 00 00 00 00 00 00 00 00 00 00 00 00   Bloqueado db 64 DUP(0)
+                00 00 00 00 00 00 00 00 00 00 00 00 
+                00 00 00 00 00 00 00 00 00 00 00 00 
+                00 00 00 00 00 00 00 00 00 00 00 00 
+                00 00 00 00 00 00 00 00 00 00 00 00 
+                00 00 00 00                         
+[ 127]        :                                       
+[ 128]        :                                       ;Varibles usadas para colocar el cursor para escribir cadenas
+[ 129]    04EC: 00                                    fila  db 0
+[ 130]    04ED: 00                                    colum db 0
+[ 131]        :                                       
+[ 132]        :                                       ;Almacenan la fila y columna donde se ha hecho clic
+[ 133]    04EE: 00                                    fTablero db ?
+[ 134]    04EF: 00                                    cTablero db ?
+[ 135]        :                                       
+[ 136]        :                                       ;Almacenan la fila, columna y boton pulsado -> 1: izquierdo; 2:derecho
+[ 137]    04F0: 00                                    fRaton db ?
+[ 138]    04F1: 00                                    cRaton db ?
+[ 139]    04F2: 00                                    botones db 0
+[ 140]        :                                       
+[ 141]        :                                       ;Caracteres para imprimir Mina (*), Bloque y borrar Bloque (espacio)
+[ 142]    04F3: 2A                                    CarMina db '*'
+[ 143]    04F4: 42                                    CarBloq db 'B'
+[ 144]    04F5: 20                                    CarEspa db ' '
+[ 145]        :                                       
+[ 146]        :                                       ;Almacena si se ha encontrado una mina (1) o no (0) en usa casilla
+[ 147]    04F6: 00                                    hayMina db ?
+[ 148]        :                                       
+[ 149]        :                                       ;Numero de casillas bloqueadas por el jugador
+[ 150]    04F7: 00                                    casillasBloq db 0
+[ 151]        :                                       
+[ 152]        :                                       ;Numero de minas bloqueadas
+[ 153]    04F8: 00                                    minasBloq db 0
+[ 154]        :                                       
+[ 155]        :                                       ;Numero de casillas destapadas
+[ 156]    04F9: 00                                    destapadas db 0
+[ 157]        :                                       
+[ 158]        :                                       ;Indica si la condicion de finalizacion del juego:
+[ 159]        :                                       ;FIN=0 -> la partida no ha terminado
+[ 160]        :                                       ;FIN=1 -> la partida ha terminado por abandono/salida (clic en X)
+[ 161]        :                                       ;FIN=2 -> la partida ha terminado perdiendo el jugador (mina destapada)
+[ 162]        :                                       ;FIN=3 -> la partida ha terminado ganando el jugador
+[ 163]    04FA: 00                                    fin db 0
+[ 164]        :                                       
+[ 165]        :                                       ;cadena para la salida por pantalla
+[ 166]    04FB: 24 24 24                              cadenaEsc db 3 DUP('$')
+[ 167]        :                                       
+[ 168]        :                                       ;Almacena la respuesta del usuario sobre comenzar una nueva partida
+[ 169]    04FE: 00                                    NPartida db 0
+[ 170]        :                                       
+[ 171]        :                                       data ends
+[ 172]        :                                       
+[ 173]        :                                       
+[ 174]        :                                       
+[ 175]        :                                       stack segment
+[ 176]    0500: 00 00 00 00 00 00 00 00 00 00 00 00   DW 256 DUP(0)
+                00 00 00 00 00 00 00 00 00 00 00 00 
+                00 00 00 00 00 00 00 00 00 00 00 00 
+                00 00 00 00 00 00 00 00 00 00 00 00 
+                00 00 00 00 00 00 00 00 00 00 00 00 
+                00 00 00 00 00 00 00 00 00 00 00 00 
+                00 00 00 00 00 00 00 00 00 00 00 00 
+                00 00 00 00 00 00 00 00 00 00 00 00 
+                00 00 00 00 00 00 00 00 00 00 00 00 
+                00 00 00 00 00 00 00 00 00 00 00 00 
+                00 00 00 00 00 00 00 00 00 00 00 00 
+                00 00 00 00 00 00 00 00 00 00 00 00 
+                00 00 00 00 00 00 00 00 00 00 00 00 
+                00 00 00 00 00 00 00 00 00 00 00 00 
+                00 00 00 00 00 00 00 00 00 00 00 00 
+                00 00 00 00 00 00 00 00 00 00 00 00 
+                00 00 00 00 00 00 00 00 00 00 00 00 
+                00 00 00 00 00 00 00 00 00 00 00 00 
+                00 00 00 00 00 00 00 00 00 00 00 00 
+                00 00 00 00 00 00 00 00 00 00 00 00 
+                00 00 00 00 00 00 00 00 00 00 00 00 
+                00 00 00 00 00 00 00 00 00 00 00 00 
+                00 00 00 00 00 00 00 00 00 00 00 00 
+                00 00 00 00 00 00 00 00 00 00 00 00 
+                00 00 00 00 00 00 00 00 00 00 00 00 
+                00 00 00 00 00 00 00 00 00 00 00 00 
+                00 00 00 00 00 00 00 00 00 00 00 00 
+                00 00 00 00 00 00 00 00 00 00 00 00 
+                00 00 00 00 00 00 00 00 00 00 00 00 
+                00 00 00 00 00 00 00 00 00 00 00 00 
+                00 00 00 00 00 00 00 00 00 00 00 00 
+                00 00 00 00 00 00 00 00 00 00 00 00 
+                00 00 00 00 00 00 00 00 00 00 00 00 
+                00 00 00 00 00 00 00 00 00 00 00 00 
+                00 00 00 00 00 00 00 00 00 00 00 00 
+                00 00 00 00 00 00 00 00 00 00 00 00 
+                00 00 00 00 00 00 00 00 00 00 00 00 
+                00 00 00 00 00 00 00 00 00 00 00 00 
+                00 00 00 00 00 00 00 00 00 00 00 00 
+                00 00 00 00 00 00 00 00 00 00 00 00 
+                00 00 00 00 00 00 00 00 00 00 00 00 
+                00 00 00 00 00 00 00 00 00 00 00 00 
+                00 00 00 00 00 00 00 00             
+[ 177]        :                                       stack ends
+[ 178]        :                                       
+[ 179]        :                                       
+[ 180]        :                                       
+[ 181]        :                                       code segment
+[ 182]        :                                       
+[ 183]        :                                       ;**********************************   PROCEDIMIENTOS DE GENERACION DE NUMEROS ALEATORIOS *******************************
+[ 184]        :                                       
+[ 185]        :                                       
+[ 186]        :                                       ;F: Calcula un valor aleatorio entre 0 y TotalCasillas-1
+[ 187]        :                                       ;S: AH valor aleatorio
+[ 188]    0700:                                       NumAleatorio PROC
+[ 189]    0700: 51                                    push cx
+[ 190]    0701: 52                                    push dx
+[ 191]        :                                       
+[ 192]    0702: B4 2C                                 mov ah,2Ch ;interrupcion que recupera la hora actual del sistema operativo
+[ 193]    0704: CD 21                                 int 21h
+[ 194]        :                                       ;ch=horas
+[ 195]        :                                       ;cl=minutos
+[ 196]        :                                       ;dh=segundos
+[ 197]        :                                       ;dl=centesimas de segundo, 1/100 secs
+[ 198]        :                                       
+[ 199]    0706: 32 E4                                 xor ah,ah
+[ 200]    0708: 8A C2                                 mov al,dl
+[ 201]    070A: F6 36 94 02                           div BYTE PTR TotalCasillas  ;BYTE PTR valor16 -> hace que del valor de 16 bits solo se usen los 8 bits de menor peso
+[ 202]        :                                       ;AH contiene el aleatorio
+[ 203]        :                                       
+[ 204]    070E: 5A                                    pop dx
+[ 205]    070F: 59                                    pop cx
+[ 206]    0710: C3                                    ret
+[ 207]        :                                       NumAleatorio ENDP
+[ 208]        :                                       
+[ 209]        :                                       
+[ 210]        :                                       ;F: Calcula un vector de numeros aleatorios todos ellos distintos entre si
+[ 211]        :                                       ;E: SI direccion de la variable vector donde almacenar los numeros
+[ 212]        :                                       ;   CX numero de aleatorios a generar y almacenar
+[ 213]    0711:                                       VectorAleatDist PROC
+[ 214]    0711: 50                                    push ax
+[ 215]    0712: 53                                    push bx
+[ 216]    0713: 56                                    push si
+[ 217]    0714: 57                                    push di
+[ 218]        :                                       
+[ 219]    0715: 8B DE                                 mov bx, si
+[ 220]        :                                       
+[ 221]    0717:                                       bucleVectorAleat:
+[ 222]        :                                       
+[ 223]    0717: E8 E6 FF                              call NumAleatorio   ;Cambia AX
+[ 224]        :                                       
+[ 225]    071A: 8B FE                                 mov di,si
+[ 226]    071C:                                       comprobarRepetidoVAleat:
+[ 227]    071C: 4F                                    dec di
+[ 228]    071D: 3B FB                                 cmp di,bx
+[ 229]    071F: 7C 06                                 jl insertarPosicionAleat
+[ 230]    0721: 38 25                                 cmp [di],ah
+[ 231]    0723: 74 F2                                 je bucleVectorAleat
+[ 232]    0725: EB F5                                 jmp comprobarRepetidoVAleat
+[ 233]        :                                       
+[ 234]    0727:                                       insertarPosicionAleat:
+[ 235]    0727: 88 24                                 mov [si],ah
+[ 236]    0729: 46                                    inc si
+[ 237]    072A: E2 EB                                 loop bucleVectorAleat
+[ 238]        :                                       
+[ 239]    072C: 5F                                    pop di
+[ 240]    072D: 5E                                    pop si
+[ 241]    072E: 5B                                    pop bx
+[ 242]    072F: 58                                    pop ax
+[ 243]    0730: C3                                    ret
+[ 244]        :                                       VectorAleatDist ENDP
+[ 245]        :                                       
+[ 246]        :                                       
+[ 247]        :                                       
+[ 248]        :                                       ;**********************************   PROCEDIMIENTOS YA UTILIZADOS EN OTRAS PRACTICAS O RELACIONADOS CON INT. SOFTWARE  *******************************
+[ 249]        :                                       
+[ 250]        :                                       ;Convierte un numero entero a una cadena de caracteres terminada en $
+[ 251]        :                                       ;E: AX contiene el numero a convertir
+[ 252]        :                                       ;   DX contiene la direccion de la cadena donde almacena la cadena resultado
+[ 253]    0731:                                       NumeroACadena PROC
+[ 254]    0731: 50                                    push ax
+[ 255]    0732: 53                                    push bx
+[ 256]    0733: 51                                    push cx
+[ 257]    0734: 52                                    push dx
+[ 258]    0735: 57                                    push di
+[ 259]        :                                       
+[ 260]    0736: BB 0A 00                              mov bx, 10
+[ 261]    0739: 8B FA                                 mov di, dx
+[ 262]        :                                       
+[ 263]    073B: 33 C9                                 xor cx, cx
+[ 264]        :                                       
+[ 265]    073D: 3D 00 00                              cmp ax, 0
+[ 266]    0740: 7D 06                                 jge BNumCad
+[ 267]        :                                       
+[ 268]    0742: C6 05 2D                              mov [di], '-'
+[ 269]    0745: 47                                    inc di
+[ 270]    0746: F7 D8                                 neg ax
+[ 271]        :                                       
+[ 272]    0748:                                       BNumCad:        ;Bucle que transforma cada digito a caracter, de menor a mayor peso
+[ 273]    0748: 33 D2                                 xor dx, dx
+[ 274]    074A: F7 F3                                 div bx
+[ 275]    074C: 80 C2 30                              add dl, '0'
+[ 276]    074F: 52                                    push dx
+[ 277]    0750: 41                                    inc cx
+[ 278]    0751: 3D 00 00                              cmp ax, 0
+[ 279]    0754: 75 F2                                 jne BNumCad
+[ 280]        :                                       
+[ 281]    0756:                                       BInvertir:      ;Bucle para invertir los restos
+[ 282]    0756: 8F 05                                 pop [di]
+[ 283]    0758: 47                                    inc di
+[ 284]    0759: E2 FB                                 loop BInvertir
+[ 285]        :                                       
+[ 286]    075B: C6 05 24                              mov [di], '$'
+[ 287]        :                                       
+[ 288]    075E: 5F                                    pop di
+[ 289]    075F: 5A                                    pop dx
+[ 290]    0760: 59                                    pop cx
+[ 291]    0761: 5B                                    pop bx
+[ 292]    0762: 58                                    pop ax
+[ 293]    0763: C3                                    ret
+[ 294]        :                                       NumeroACadena ENDP
+[ 295]        :                                       
+[ 296]        :                                       
+[ 297]        :                                       ;F: Lee una tecla por teclado sin eco por pantalla
+[ 298]        :                                       ;S: AL tecla leida
+[ 299]    0764:                                       LeerTecla PROC
+[ 300]    0764: B4 08                                 mov ah,8
+[ 301]    0766: CD 21                                 int 21h
+[ 302]    0768: C3                                    ret
+[ 303]        :                                       LeerTecla ENDP
+[ 304]        :                                       
+[ 305]        :                                       
+[ 306]        :                                       ;F: Oculta el cursor del teclado
+[ 307]    0769:                                       OcultarCursor PROC
+[ 308]    0769: 50                                    push ax
+[ 309]    076A: 51                                    push cx
+[ 310]        :                                       
+[ 311]    076B: B4 01                                 mov ah,1
+[ 312]    076D: B5 20                                 mov ch,20h
+[ 313]    076F: 32 C9                                 xor cl,cl
+[ 314]    0771: CD 10                                 int 10h
+[ 315]        :                                       
+[ 316]    0773: 59                                    pop cx
+[ 317]    0774: 58                                    pop ax
+[ 318]    0775: C3                                    ret
+[ 319]        :                                       OcultarCursor ENDP
+[ 320]        :                                       
+[ 321]        :                                       
+[ 322]        :                                       ;F: Muestra el cusor del teclado
+[ 323]    0776:                                       MostrarCursor PROC
+[ 324]    0776: 50                                    push ax
+[ 325]    0777: 51                                    push cx
+[ 326]        :                                       
+[ 327]    0778: B4 01                                 mov ah,1
+[ 328]    077A: B5 0B                                 mov ch,0Bh
+[ 329]    077C: B1 0C                                 mov cl,0Ch
+[ 330]    077E: CD 10                                 int 10h
+[ 331]        :                                       
+[ 332]    0780: 59                                    pop cx
+[ 333]    0781: 58                                    pop ax
+[ 334]    0782: C3                                    ret
+[ 335]        :                                       MostrarCursor ENDP
+[ 336]        :                                       
+[ 337]        :                                       
+[ 338]        :                                       ;F: Imprime una cadena terminada en $ en la posicion donde se encuentre el cursor
+[ 339]        :                                       ;E: DX direccion de comienzo de la cadena a imprimir
+[ 340]    0783:                                       Imprimir PROC
+[ 341]    0783: 50                                    push ax
+[ 342]        :                                       
+[ 343]    0784: B4 09                                 mov ah,9h
+[ 344]    0786: CD 21                                 int 21h
+[ 345]        :                                       
+[ 346]    0788: 58                                    pop ax
+[ 347]    0789: C3                                    ret
+[ 348]        :                                       Imprimir ENDP
+[ 349]        :                                       
+[ 350]        :                                       
+[ 351]        :                                       ;F: Muestra el cursor del raton
+[ 352]    078A:                                       MostrarRaton PROC
+[ 353]    078A: 50                                    push ax
+[ 354]        :                                       
+[ 355]    078B: B8 01 00                              mov ax,1
+[ 356]    078E: CD 33                                 int 33h
+[ 357]        :                                       
+[ 358]    0790: 58                                    pop ax
+[ 359]    0791: C3                                    ret
+[ 360]        :                                       MostrarRaton ENDP
+[ 361]        :                                       
+[ 362]        :                                       
+[ 363]        :                                       ;F: Oculta el cursor del raton
+[ 364]    0792:                                       OcultarRaton PROC
+[ 365]    0792: 50                                    push ax
+[ 366]        :                                       
+[ 367]    0793: B8 02 00                              mov ax,2
+[ 368]    0796: CD 33                                 int 33h
+[ 369]        :                                       
+[ 370]    0798: 58                                    pop ax
+[ 371]    0799: C3                                    ret
+[ 372]        :                                       OcultarRaton ENDP
+[ 373]        :                                       
+[ 374]        :                                       
+[ 375]        :                                       ;F: Lee el estado del raton y espera hasta que se pulse un boton, momento en que devuelve la posicion y boton pulsado
+[ 376]        :                                       ;S: DL fila del raton
+[ 377]        :                                       ;   DH columna del raton
+[ 378]        :                                       ;   BL botones pulsados 1: izquierdo; 2:derecho
+[ 379]    079A:                                       EsperarClicRaton PROC
+[ 380]    079A: 50                                    push ax
+[ 381]    079B: 51                                    push cx
+[ 382]        :                                       
+[ 383]    079C:                                       bucleEPulsar:
+[ 384]    079C: B8 03 00                              mov ax, 3
+[ 385]    079F: CD 33                                 int 33h
+[ 386]    07A1: 83 E3 03                              and bx,3
+[ 387]    07A4: 74 F6                                 jz bucleEPulsar ;Si no se pulsa ningun boton se queda en bucle
+[ 388]        :                                       
+[ 389]        :                                       ;@PREGUNTA: Que es el 'ajuste modo texto'
+[ 390]    07A6: D1 EA D1 EA D1 EA                     shr dx, 3  ;Ajuste modo texto
+[ 391]    07AC: D1 E9 D1 E9 D1 E9                     shr cx, 3
+[ 392]    07B2: 8A F1                                 mov dh, cl
+[ 393]        :                                       
+[ 394]    07B4: 59                                    pop cx
+[ 395]    07B5: 58                                    pop ax
+[ 396]    07B6: C3                                    ret
+[ 397]        :                                       EsperarClicRaton ENDP
+[ 398]        :                                       
+[ 399]        :                                       
+[ 400]        :                                       ;F: Borra la pantalla (la deja en negro)
+[ 401]    07B7:                                       BorrarPantalla PROC
+[ 402]    07B7: 50                                    push ax
+[ 403]    07B8: 53                                    push bx
+[ 404]    07B9: 51                                    push cx
+[ 405]    07BA: 52                                    push dx
+[ 406]        :                                       
+[ 407]    07BB: B4 06                                 mov ah,6h
+[ 408]    07BD: 32 C0                                 xor al,al
+[ 409]    07BF: B7 07                                 mov bh,7
+[ 410]    07C1: 33 C9                                 xor cx,cx
+[ 411]    07C3: B6 18                                 mov dh,24
+[ 412]    07C5: B2 4F                                 mov dl,79
+[ 413]    07C7: CD 10                                 int 10h
+[ 414]        :                                       
+[ 415]    07C9: 5A                                    pop dx
+[ 416]    07CA: 59                                    pop cx
+[ 417]    07CB: 5B                                    pop bx
+[ 418]    07CC: 58                                    pop ax
+[ 419]    07CD: C3                                    ret
+[ 420]        :                                       BorrarPantalla ENDP
+[ 421]        :                                       
+[ 422]        :                                       
+[ 423]        :                                       ;F: Imprime un caracter a color en la posicion actual del cursor
+[ 424]        :                                       ;E: AL contiene el caracter y BL el codigo de color a imprimir
+[ 425]    07CE:                                       ImprimeCarColor PROC
+[ 426]    07CE: 50                                    push ax
+[ 427]    07CF: 53                                    push bx
+[ 428]    07D0: 51                                    push cx
+[ 429]        :                                       
+[ 430]    07D1: B4 09                                 mov ah, 9
+[ 431]    07D3: 80 C3 07                              add bl, 7
+[ 432]    07D6: 32 FF                                 xor bh, bh
+[ 433]    07D8: B9 01 00                              mov cx, 1
+[ 434]    07DB: CD 10                                 int 10h
+[ 435]        :                                       
+[ 436]    07DD: 59                                    pop cx
+[ 437]    07DE: 5B                                    pop bx
+[ 438]    07DF: 58                                    pop ax
+[ 439]    07E0: C3                                    ret
+[ 440]        :                                       ImprimeCarColor ENDP
+[ 441]        :                                       
+[ 442]        :                                       
+[ 443]        :                                       ;F: Coloca el cursor en una determinada fila y columna de pantalla
+[ 444]        :                                       ;E: las variables FILA y COLUM deben contener los valores de posicion deseados
+[ 445]    07E1:                                       ColocarCursor PROC
+[ 446]    07E1: 50                                    push ax
+[ 447]    07E2: 53                                    push bx
+[ 448]    07E3: 52                                    push dx
+[ 449]        :                                       
+[ 450]    07E4: B4 02                                 mov ah, 2
+[ 451]    07E6: 8A 36 DC 04                           mov dh, fila
+[ 452]    07EA: 8A 16 DD 04                           mov dl, colum
+[ 453]    07EE: 32 FF                                 xor bh, bh
+[ 454]    07F0: CD 10                                 int 10h
+[ 455]        :                                       
+[ 456]    07F2: 5A                                    pop dx
+[ 457]    07F3: 5B                                    pop bx
+[ 458]    07F4: 58                                    pop ax
+[ 459]    07F5: C3                                    ret
+[ 460]        :                                       ColocarCursor ENDP
+[ 461]        :                                       
+[ 462]        :                                       
+[ 463]        :                                       ;F: Limpia el buffer de entrada del teclado por si tuviera algo
+[ 464]    07F6:                                       LimpiarBufferTeclado PROC
+[ 465]    07F6: 50                                    push ax
+[ 466]        :                                       
+[ 467]    07F7: B8 00 0C                              mov ax,0C00h
+[ 468]    07FA: CD 21                                 int 21h
+[ 469]        :                                       
+[ 470]    07FC: 58                                    pop ax
+[ 471]    07FD: C3                                    ret
+[ 472]        :                                       LimpiarBufferTeclado ENDP
+[ 473]        :                                       
+[ 474]        :                                       
+[ 475]        :                                       ;**********************************   PROCEDIMIENTOS DE INICIALIZACION Y GESTION DE LA INTERFAZ  *******************************
+[ 476]        :                                       
+[ 477]        :                                       ;F: Dibuja el tablero en pantalla
+[ 478]    07FE:                                       DibujarTablero PROC
+[ 479]    07FE: 52                                    push dx
+[ 480]        :                                       
+[ 481]    07FF: BA A4 00                              lea dx, dibTablero
+[ 482]    0802: E8 7E FF                              call imprimir
+[ 483]        :                                       
+[ 484]    0805: C6 06 DC 04 04                        mov fila, YBLOQ
+[ 485]    080A: C6 06 DD 04 23                        mov colum, XBLOQ
+[ 486]    080F: E8 CF FF                              call ColocarCursor
+[ 487]    0812: BA D2 02                              lea dx, mensajeMinas
+[ 488]    0815: E8 6B FF                              call imprimir
+[ 489]        :                                       
+[ 490]    0818: C6 06 DC 04 00                        mov fila, 0       ;Mensaje para pulsar y salir de la partida actual
+[ 491]    081D: C6 06 DD 04 00                        mov colum, 0
+[ 492]    0822: E8 BC FF                              call ColocarCursor
+[ 493]    0825: BA AD 03                              lea dx, mensajeS
+[ 494]    0828: E8 58 FF                              call imprimir
+[ 495]        :                                       
+[ 496]    082B: 5A                                    pop dx
+[ 497]    082C: C3                                    ret
+[ 498]        :                                       DibujarTablero ENDP
+[ 499]        :                                       
+[ 500]        :                                       
+[ 501]        :                                       ;F: Copia todas las casillas de MtableroDBG a Mtablero
+[ 502]    082D:                                       InicializaTableroDBG PROC
+[ 503]    082D: 51                                    push cx
+[ 504]    082E: 56                                    push si
+[ 505]    082F: 57                                    push di
+[ 506]        :                                       
+[ 507]    0830: 8B 0E 94 02                           mov cx, TotalCasillas   ;Esto es simplemente una forma mas eficiente de hacer
+[ 508]    0834: BE DC 03                              lea si, MtableroDBG     ;un loop que contendria mov [DI], [SI] y que aumenta
+[ 509]    0837: BF 1C 04                              lea di, Mtablero        ;automaticamente en cada repeticion SI y DI
+[ 510]    083A: F3 A4                                 rep movsb               ;Igual que en el loop, CX funciona como contador
+[ 511]        :                                       
+[ 512]    083C: 5F                                    pop di
+[ 513]    083D: 5E                                    pop si
+[ 514]    083E: 59                                    pop cx
+[ 515]    083F: C3                                    ret
+[ 516]        :                                       InicializaTableroDBG ENDP
+[ 517]        :                                       
+[ 518]        :                                       
+[ 519]        :                                       ;F: Borra la pantalla e imprime las cadenas de la pantalla de inicio de cada partida
+[ 520]        :                                       ;   pidiendo al jugador (si corresponde) por si quiere jugar con un tablero precargado
+[ 521]    0840:                                       InicializarEntorno PROC
+[ 522]    0840: 50                                    push ax
+[ 523]    0841: 52                                    push dx
+[ 524]        :                                       
+[ 525]    0842: E8 72 FF                              call BorrarPantalla
+[ 526]        :                                       
+[ 527]    0845: BA 00 00                              lea dx, msjBienvenida1
+[ 528]    0848: E8 38 FF                              call Imprimir
+[ 529]        :                                       
+[ 530]    084B: E8 A8 FF                              call LimpiarBufferTeclado
+[ 531]        :                                       
+[ 532]    084E: 80 3E EE 04 02                        cmp NPartida,2
+[ 533]    0853: 74 1F                                 je fin_inic_Tab
+[ 534]        :                                       
+[ 535]    0855: BA 2E 00                              lea dx, msjBienvenida2
+[ 536]    0858: E8 28 FF                              call Imprimir
+[ 537]        :                                       
+[ 538]        :                                       
+[ 539]    085B:                                       leer_tecla_inic:
+[ 540]    085B: E8 06 FF                              call LeerTecla
+[ 541]    085E: 3C 73                                 cmp al, 's'
+[ 542]    0860: 74 0F                                 je inic_TabdbG
+[ 543]    0862: 3C 6E                                 cmp al, 'n'
+[ 544]    0864: 75 F5                                 jne leer_tecla_inic
+[ 545]        :                                       
+[ 546]        :                                       
+[ 547]    0866: BA 5D 00                              lea dx,msjInicializando
+[ 548]    0869: E8 17 FF                              call Imprimir
+[ 549]        :                                       
+[ 550]    086C: E8 FF 01                              call InicializarTablero
+[ 551]    086F: EB 03                                 jmp fin_inic_tab
+[ 552]        :                                       
+[ 553]    0871:                                       inic_TabdbG:
+[ 554]        :                                       
+[ 555]    0871: E8 B9 FF                              call InicializaTableroDBG
+[ 556]        :                                       
+[ 557]    0874:                                       fin_inic_tab:
+[ 558]    0874: E8 40 FF                              call BorrarPantalla
+[ 559]    0877: C6 06 DC 04 00                        mov fila, 0
+[ 560]    087C: C6 06 DD 04 00                        mov colum, 0
+[ 561]    0881: E8 5D FF                              call ColocarCursor
+[ 562]        :                                       
+[ 563]    0884: E8 77 FF                              call DibujarTablero
+[ 564]        :                                       
+[ 565]    0887: 5A                                    pop dx
+[ 566]    0888: 58                                    pop ax
+[ 567]    0889: C3                                    ret
+[ 568]        :                                       InicializarEntorno ENDP
+[ 569]        :                                       
+[ 570]        :                                       
+[ 571]        :                                       ;F: borra el numero de casillas bloqueadas anterior e imprime el numero de celdas bloqueadas actual
+[ 572]    088A:                                       ImprimirBloqueadas PROC
+[ 573]    088A: 50                                    push ax
+[ 574]    088B: 52                                    push dx
+[ 575]        :                                       
+[ 576]    088C: C6 06 DC 04 04                        mov fila, YBLOQ
+[ 577]    0891: C6 06 DD 04 30                        mov colum, XBLOQ + 13
+[ 578]    0896: E8 48 FF                              call ColocarCursor
+[ 579]        :                                       
+[ 580]    0899: BA B9 02                              lea dx, CadBorrar
+[ 581]    089C: E8 E4 FE                              call Imprimir
+[ 582]        :                                       
+[ 583]        :                                       ;@PREGUNTA: Es redundante la asignacion de 'fila' y 'colum'?
+[ 584]    089F: C6 06 DC 04 04                        mov fila, YBLOQ
+[ 585]    08A4: C6 06 DD 04 30                        mov colum, XBLOQ + 13
+[ 586]    08A9: E8 35 FF                              call ColocarCursor
+[ 587]        :                                       
+[ 588]    08AC: A0 E7 04                              mov al, casillasBloq
+[ 589]    08AF: 32 E4                                 xor ah, ah
+[ 590]    08B1: BA EB 04                              lea dx, cadenaEsc
+[ 591]    08B4: E8 7A FE                              call NumeroACadena
+[ 592]    08B7: E8 C9 FE                              call imprimir
+[ 593]        :                                       
+[ 594]    08BA: 5A                                    pop dx
+[ 595]    08BB: 58                                    pop ax
+[ 596]    08BC: C3                                    ret
+[ 597]        :                                       ImprimirBloqueadas ENDP
+[ 598]        :                                       
+[ 599]        :                                       
+[ 600]        :                                       ;F: Imprime los mensajes relativos al fin de partida para dar la posibilidad al jugador
+[ 601]        :                                       ;   de salir, volver a jugar con el mismo tablero o con uno nuevo, recogiendo en NPartida
+[ 602]        :                                       ;   la eleccion del jugador. Incluye la impresion del numero de minas bloqueadas
+[ 603]        :                                       ;E: FIN=1 -> se imprime el mensaje de abandono/salida
+[ 604]        :                                       ;   FIN=2 -> se imprime el mensaje de partida perdida
+[ 605]        :                                       ;   sino (FIN=3) -> se imprime el mensaje de partida ganada
+[ 606]        :                                       ;S: NPartida=0 -> para salir del juego
+[ 607]        :                                       ;   NPartida=1 -> nueva partida con nuevo tablero
+[ 608]        :                                       ;   NPartida=2 -> nueva partida con el tablero actual
+[ 609]    08BD:                                       ContinuarOnoJuego PROC
+[ 610]    08BD: 50                                    push ax
+[ 611]    08BE: 52                                    push dx
+[ 612]        :                                       
+[ 613]        :                                       ;imprime el numero de minas bloqueadas
+[ 614]    08BF: C6 06 DC 04 08                        mov fila, YMINAS
+[ 615]    08C4: C6 06 DD 04 23                        mov colum, XMINAS
+[ 616]    08C9: E8 15 FF                              call ColocarCursor
+[ 617]        :                                       
+[ 618]    08CC: BA DE 02                              lea dx, mensajeMinasJ
+[ 619]    08CF: E8 B1 FE                              call imprimir
+[ 620]        :                                       
+[ 621]    08D2: A0 E8 04                              mov al, minasBloq
+[ 622]    08D5: 32 E4                                 xor ah, ah
+[ 623]    08D7: BA EB 04                              lea dx, cadenaEsc
+[ 624]    08DA: E8 54 FE                              call NumeroACadena
+[ 625]    08DD: E8 A3 FE                              call imprimir
+[ 626]        :                                       
+[ 627]        :                                       
+[ 628]        :                                       ;Imprime el mensaje correspondiente segun el valor de la variable FIN
+[ 629]    08E0: C6 06 EE 04 00                        mov NPartida, 0
+[ 630]    08E5: C6 06 DC 04 0E                        mov fila, YMENSAJES2
+[ 631]    08EA: C6 06 DD 04 1E                        mov colum, XMENSAJES
+[ 632]    08EF: E8 EF FE                              call ColocarCursor
+[ 633]        :                                       
+[ 634]    08F2: 80 3E EA 04 01                        cmp fin,1
+[ 635]    08F7: 74 0C                                 je selec_msj_salida
+[ 636]        :                                       
+[ 637]    08F9: 80 3E EA 04 02                        cmp fin,2
+[ 638]    08FE: 74 0A                                 je selec_msj_perdida
+[ 639]        :                                       
+[ 640]        :                                       ;sino
+[ 641]    0900: BA 2E 03                              lea dx, mensajeGanada
+[ 642]    0903: EB 08                                 jmp imprime
+[ 643]        :                                       
+[ 644]    0905:                                       selec_msj_salida:
+[ 645]    0905: BA F1 02                              lea dx, mensajeSalida
+[ 646]    0908: EB 03                                 jmp imprime
+[ 647]        :                                       
+[ 648]    090A:                                       selec_msj_perdida:
+[ 649]    090A: BA 17 03                              lea dx, mensajePerdida
+[ 650]        :                                       
+[ 651]    090D:                                       imprime:
+[ 652]    090D: E8 73 FE                              call imprimir
+[ 653]        :                                       
+[ 654]        :                                       
+[ 655]        :                                       ;imprime los mensajes de opciones al terminar partida
+[ 656]    0910: C6 06 DC 04 10                        mov fila, YMENSAJES3
+[ 657]    0915: C6 06 DD 04 1E                        mov colum, XMENSAJES
+[ 658]    091A: E8 C4 FE                              call ColocarCursor
+[ 659]        :                                       
+[ 660]    091D: BA 52 03                              lea dx, mensajeSalir
+[ 661]    0920: E8 60 FE                              call imprimir
+[ 662]        :                                       
+[ 663]        :                                       
+[ 664]    0923: C6 06 DC 04 12                        mov fila, YMENSAJES4
+[ 665]    0928: C6 06 DD 04 1E                        mov colum, XMENSAJES
+[ 666]    092D: E8 B1 FE                              call ColocarCursor
+[ 667]        :                                       
+[ 668]    0930: BA 66 03                              lea dx, mensajeNuevoJ1
+[ 669]    0933: E8 4D FE                              call imprimir
+[ 670]        :                                       
+[ 671]        :                                       
+[ 672]    0936: C6 06 DC 04 14                        mov fila, YMENSAJES5
+[ 673]    093B: C6 06 DD 04 1E                        mov colum, XMENSAJES
+[ 674]    0940: E8 9E FE                              call ColocarCursor
+[ 675]        :                                       
+[ 676]    0943: BA 89 03                              lea dx, mensajeNuevoJ2
+[ 677]    0946: E8 3A FE                              call imprimir
+[ 678]        :                                       
+[ 679]    0949:                                       rep_pide_tecla:
+[ 680]    0949: E8 18 FE                              call LeerTecla
+[ 681]    094C: 3C 73                                 cmp al, 's'
+[ 682]    094E: 74 14                                 je finContinuarJuego
+[ 683]        :                                       
+[ 684]    0950: 3C 6E                                 cmp al, 'n'
+[ 685]    0952: 75 07                                 jne sgte_tecla
+[ 686]    0954: C6 06 EE 04 01                        mov NPartida, 1
+[ 687]    0959: EB 09                                 jmp finContinuarJuego
+[ 688]        :                                       
+[ 689]    095B:                                       sgte_tecla:
+[ 690]    095B: 3C 61                                 cmp al, 'a'
+[ 691]    095D: 75 EA                                 jne rep_pide_tecla
+[ 692]    095F: C6 06 EE 04 02                        mov NPartida, 2
+[ 693]        :                                       
+[ 694]        :                                       
+[ 695]    0964:                                       finContinuarJuego:
+[ 696]    0964: 5A                                    pop dx
+[ 697]    0965: 58                                    pop ax
+[ 698]    0966: C3                                    ret
+[ 699]        :                                       
+[ 700]        :                                       ContinuarOnoJuego ENDP
+[ 701]        :                                       
+[ 702]        :                                       
+[ 703]        :                                       ;F: Mensaje y espera de clic de raton (mosatrandolo antes y ocultandolo al final)
+[ 704]        :                                       ;   almacenando en 3 variables el estado del raton en el momento de hacer clic en un boton
+[ 705]        :                                       ;S: cRaton = columna del raton
+[ 706]        :                                       ;   fRaton = fila del raton
+[ 707]        :                                       ;   botones = identificador de los botones pulsados (se explica en EsperarClicRaton)
+[ 708]    0967:                                       EsperarClic PROC
+[ 709]    0967: 52                                    push dx
+[ 710]        :                                       
+[ 711]    0968: C6 06 DC 04 17                        mov fila, YMENSAJECLIC
+[ 712]    096D: C6 06 DD 04 0A                        mov colum, XMENSAJECLIC
+[ 713]    0972: E8 6C FE                              call ColocarCursor
+[ 714]        :                                       
+[ 715]    0975: BA A1 02                              lea dx, EsperaClic
+[ 716]    0978: E8 08 FE                              call Imprimir
+[ 717]        :                                       
+[ 718]    097B: E8 0C FE                              call MostrarRaton
+[ 719]        :                                       
+[ 720]    097E: E8 19 FE                              call EsperarClicRaton
+[ 721]    0981: 88 36 E1 04                           mov cRaton, dh
+[ 722]    0985: 88 16 E0 04                           mov fRaton, dl
+[ 723]    0989: 88 1E E2 04                           mov botones, bl
+[ 724]        :                                       
+[ 725]        :                                       ; ***** nuevo, se limpia zona mensaje de espera
+[ 726]    098D: C6 06 DC 04 17                        mov fila, YMENSAJECLIC
+[ 727]    0992: C6 06 DD 04 0A                        mov colum, XMENSAJECLIC
+[ 728]    0997: E8 47 FE                              call ColocarCursor
+[ 729]        :                                       
+[ 730]    099A: BA B9 02                              lea dx, CadBorrar
+[ 731]    099D: E8 E3 FD                              call Imprimir
+[ 732]        :                                       
+[ 733]    09A0: E8 EF FD                              call OcultarRaton
+[ 734]        :                                       
+[ 735]    09A3:                                       finEsperarClic:
+[ 736]    09A3: 5A                                    pop dx
+[ 737]    09A4: C3                                    ret
+[ 738]        :                                       EsperarClic ENDP
+[ 739]        :                                       
+[ 740]        :                                       
+[ 741]        :                                       
+[ 742]        :                                       ;**********************************   PROCEDIMIENTOS DE CONTROL Y TRANSFORMACION DE POSICIONES *******************************
+[ 743]        :                                       
+[ 744]        :                                       ;F: comprueba si la posicion del clic de raton se encuentra situada dentro del tablero, en una casilla valida
+[ 745]        :                                       ;E: posicion actual del puntero del raton (fRaton, cRaton)
+[ 746]        :                                       ;S: AL=0 si es una posicion invalida; AL=1 si es una posicion dentro del tablero y valida
+[ 747]    09A5:                                       PosicionRatonValida PROC
+[ 748]    09A5: 32 C0                                 xor al, al
+[ 749]        :                                       
+[ 750]    09A7: 80 3E E1 04 0A                        cmp cRaton, XTABLEROINI
+[ 751]    09AC: 7C 25                                 jl FinDentroTablero
+[ 752]    09AE: 80 3E E1 04 1A                        cmp cRaton, XTABLEROFIN
+[ 753]    09B3: 7F 1E                                 jg FinDentroTablero
+[ 754]    09B5: 80 3E E0 04 02                        cmp fRaton, YTABLEROINI
+[ 755]    09BA: 7C 17                                 jl FinDentroTablero
+[ 756]    09BC: 80 3E E0 04 12                        cmp fRaton, YTABLEROFIN
+[ 757]    09C1: 7F 10                                 jg FinDentroTablero
+[ 758]        :                                       
+[ 759]        :                                       
+[ 760]        :                                       ;si esta en posicion par el raton, la posicion no es una celda valida con toda seguridad
+[ 761]    09C3: F6 06 E1 04 01                        test cRaton, 1       ;and
+[ 762]    09C8: 74 09                                 je FinDentroTablero  ;jz
+[ 763]        :                                       
+[ 764]    09CA: F6 06 E0 04 01                        test fRaton, 1       ;and
+[ 765]    09CF: 74 02                                 je FinDentroTablero  ;jz
+[ 766]        :                                       
+[ 767]    09D1:                                       RatonPosPar:
+[ 768]    09D1: B0 01                                 mov al,1
+[ 769]        :                                       
+[ 770]    09D3:                                       FinDentroTablero:
+[ 771]    09D3: C3                                    ret
+[ 772]        :                                       PosicionRatonValida ENDP
+[ 773]        :                                       
+[ 774]        :                                       ;F: transforma la posicion del raton en una posicion de tablero
+[ 775]        :                                       ;E: posicion del raton (fRaton, cRaton)
+[ 776]        :                                       ;S: posicion del tablero (fTablero, cTablero)
+[ 777]    09D4:                                       PantallaATablero PROC
+[ 778]    09D4: 53                                    push bx
+[ 779]        :                                       
+[ 780]        :                                       
+[ 781]    09D5: 8A 1E E1 04                           mov bl, cRaton
+[ 782]    09D9: 80 EB 0A                              sub bl, XTABLEROINI
+[ 783]    09DC: D0 EB                                 shr bl, 1
+[ 784]    09DE: 88 1E DF 04                           mov cTablero, bl
+[ 785]        :                                       
+[ 786]    09E2: 8A 1E E0 04                           mov bl, fRaton
+[ 787]    09E6: 80 EB 02                              sub bl, YTABLEROINI
+[ 788]    09E9: D0 EB                                 shr bl, 1
+[ 789]    09EB: 88 1E DE 04                           mov fTablero, bl
+[ 790]        :                                       
+[ 791]    09EF: 5B                                    pop bx
+[ 792]    09F0: C3                                    ret
+[ 793]        :                                       PantallaATablero ENDP
+[ 794]        :                                       
+[ 795]        :                                       
+[ 796]        :                                       ;F: calcula la posicion de pantalla que le corresponde a una determinada posicion del tablero
+[ 797]        :                                       ;E: casilla del tablero (fTablero, cTablero)
+[ 798]        :                                       ;S: posicion de pantalla (fila y colum)
+[ 799]    09F1:                                       TableroAPantalla PROC
+[ 800]    09F1: 53                                    push bx
+[ 801]        :                                       
+[ 802]    09F2: 8A 1E DF 04                           mov bl, cTablero
+[ 803]    09F6: D0 E3                                 shl bl, 1
+[ 804]    09F8: 80 C3 0B                              add bl, XTABLEROINI+1
+[ 805]    09FB: 88 1E DD 04                           mov colum, bl
+[ 806]        :                                       
+[ 807]    09FF: 8A 1E DE 04                           mov bl, fTablero
+[ 808]    0A03: D0 E3                                 shl bl, 1
+[ 809]    0A05: 80 C3 03                              add bl, YTABLEROINI+1
+[ 810]    0A08: 88 1E DC 04                           mov fila, bl
+[ 811]        :                                       
+[ 812]    0A0C: 5B                                    pop bx
+[ 813]    0A0D: C3                                    ret
+[ 814]        :                                       TableroAPantalla ENDP
+[ 815]        :                                       
+[ 816]        :                                       ;F: calcula el indice lineal que le corresponde a la posicion indicada del tablero
+[ 817]        :                                       ;E: posicion del tablero (fTablero, cTablero)
+[ 818]        :                                       ;S: SI
+[ 819]    0A0E:                                       CalculaIndiceLineal PROC
+[ 820]    0A0E: 50                                    push ax
+[ 821]        :                                       
+[ 822]    0A0F: 32 E4                                 xor ah, ah
+[ 823]    0A11: A0 DE 04                              mov al, fTablero
+[ 824]    0A14: D0 E0 D0 E0 D0 E0                     shl al, 3 ;x8
+[ 825]    0A1A: 02 06 DF 04                           add al, cTablero
+[ 826]    0A1E: 8B F0                                 mov si, ax
+[ 827]        :                                       
+[ 828]    0A20: 58                                    pop ax
+[ 829]    0A21: C3                                    ret
+[ 830]        :                                       
+[ 831]        :                                       CalculaIndiceLineal ENDP
+[ 832]        :                                       
+[ 833]        :                                       
+[ 834]        :                                       ;********************************************** PROCEDIMIENTOS AUXILIARES ************************************************
+[ 835]        :                                       
+[ 836]        :                                       ;F: Calcula las coordenadas de tablero que corresponden a un dado indice lineal
+[ 837]        :                                       ;E: BL = Indice lineal de la casilla
+[ 838]        :                                       ;S: 'cTablero' = columna de tablero correspondiente al indice lineal
+[ 839]        :                                       ;   'fTablero' = fila de tablero correspondiente al indice lineal
+[ 840]    0A22:                                       PROC CalculaColumYFila
+[ 841]    0A22: 50                                    push ax                         ;Para almacenar el resultado de la division
+[ 842]    0A23: 51                                    push cx                         ;Para almacenar el divisor (8)
+[ 843]        :                                       
+[ 844]    0A24: 32 E4                                 xor ah, ah
+[ 845]    0A26: 8A C3                                 mov al, bl                      ;Inicializa AL con el indice lineal (BL)
+[ 846]    0A28: B1 08                                 mov cl, 8                       ;Inicializa el divisor (8 bits para que todo el resultado se almacene en AX)
+[ 847]    0A2A: F6 F1                                 div cl                          ;Dividiendo entre 8 (CL) AL representara la fila y AH la columna
+[ 848]    0A2C: 88 26 DF 04                           mov cTablero, ah
+[ 849]    0A30: A2 DE 04                              mov fTablero, al
+[ 850]        :                                       
+[ 851]    0A33: 59                                    pop cx
+[ 852]    0A34: 58                                    pop ax
+[ 853]    0A35: C3                                    ret
+[ 854]        :                                       CalculaColumYFila ENDP
+[ 855]        :                                       
+[ 856]        :                                       
+[ 857]        :                                       ;**********************************   PROCEDIMIENTOS RELACIONADOS CON LA LOGICA DEL JUEGO  *******************************
+[ 858]        :                                       
+[ 859]        :                                       
+[ 860]        :                                       ;F: Reinicia las variables, no es necesario llamarlo al inicio del juego, pues las variables ya estan inicializadas en su definicion
+[ 861]        :                                       ;   pero si es necesario ejecutarlo para jugar una nueva partida
+[ 862]    0A36:                                       ResetVariables PROC
+[ 863]    0A36: 56                                    push si
+[ 864]    0A37: 51                                    push cx
+[ 865]        :                                       
+[ 866]    0A38: 8B 0E 94 02                           mov cx,TotalCasillas
+[ 867]    0A3C: 33 F6                                 xor si,si
+[ 868]        :                                       
+[ 869]    0A3E:                                       sigue:
+[ 870]    0A3E: 80 3E EE 04 02                        cmp NPartida,2
+[ 871]    0A43: 74 05                                 je salta_inic_Mtablero
+[ 872]    0A45: C6 84 1C 04 00                        mov MTablero[si], 0
+[ 873]        :                                       
+[ 874]    0A4A:                                       salta_inic_Mtablero:
+[ 875]    0A4A: C6 84 5C 04 00                        mov Destapado[si],0
+[ 876]    0A4F: C6 84 9C 04 00                        mov Bloqueado[si],0
+[ 877]    0A54: 46                                    inc si
+[ 878]    0A55: E2 E7                                 loop sigue
+[ 879]        :                                       
+[ 880]    0A57: C6 06 E8 04 00                        mov minasBloq, 0
+[ 881]    0A5C: C6 06 E7 04 00                        mov casillasBloq, 0
+[ 882]    0A61: C6 06 E9 04 00                        mov destapadas, 0
+[ 883]    0A66: C6 06 EA 04 00                        mov fin, 0
+[ 884]        :                                       
+[ 885]    0A6B: 59                                    pop cx
+[ 886]    0A6C: 5E                                    pop si
+[ 887]    0A6D: C3                                    ret
+[ 888]        :                                       ResetVariables ENDP
+[ 889]        :                                       
+[ 890]        :                                       
+[ 891]        :                                       ;F: Inicializa la variable MTablero generando posiciones aleatorias para la localizacion de minas
+[ 892]        :                                       ;   En base a las minas colocadas se calculan los contadores alrededor de cada mina
+[ 893]    0A6E:                                       InicializarTablero PROC
+[ 894]    0A6E: 50                                    push ax                                  ;Para comprobar los bordes del tablero
+[ 895]    0A6F: 53                                    push bx                                  ;Para acceder a MTablero
+[ 896]    0A70: 51                                    push cx                                  ;Para almacenar el numero de minas
+[ 897]    0A71: 56                                    push si                                  ;Para la direccion de 'vectorMinas'
+[ 898]        :                                       
+[ 899]    0A72: 8A 0E 96 02                           mov cl, numMinas                         ;Inicializa 'CX' con el numero de minas = cantidad de numeros aleatorios diferentes
+[ 900]    0A76: 32 ED                                 xor ch, ch
+[ 901]    0A78: BE 97 02                              lea si, vectorMinas
+[ 902]    0A7B: E8 93 FC                              call VectorAleatDist                     ;Genera las posiciones de las minas
+[ 903]        :                                       
+[ 904]    0A7E: 8A 0E 96 02                           mov cl, numMinas                         ;Reinicializacion del valor de CX. El procedimiento 'VectorAleatDist' lo ha modificado. CH ya es 0
+[ 905]    0A82:                                       bInsMinas:                               ;Actualiza el tablero por cada mina insertada
+[ 906]    0A82: 8B D9                                 mov bx, cx                           ;Guarda el valor del contador de iteraciones para rectificarlo y poder acceder a toda posicion de 'vectorMinas'
+[ 907]    0A84: 8A 9F 96 02                           mov bl, vectorMinas[bx-1]            ;Guarda la posicion de la mina. No hace falta poner a 0 'BH' porque ya estaba a 0 'CH'
+[ 908]    0A88: C6 87 1C 04 FF                        mov MTablero[bx], -1                 ;Inserta la mina guardada en la posicion correspondiente de tablero
+[ 909]    0A8D: E8 92 FF                              call CalculaColumYFila               ;Calcula 'cTablero' y 'fTablero' a partir del indice lineal (almacenado en BX)
+[ 910]        :                                       
+[ 911]        :                                       ;ACTUALIZA LAS CASILLAS ADYACENTES
+[ 912]        :                                       
+[ 913]        :                                       ;Casilla izquierda
+[ 914]    0A90: A0 DF 04                              mov al, cTablero
+[ 915]    0A93: FE C8                                 dec al
+[ 916]    0A95: 78 1D                                 js sgteActSup                        ;Fuera de los limites. Descartadas las posiciones izquierdas. Siguiente la posicion superior
+[ 917]        :                                       
+[ 918]    0A97: 80 BF 1B 04 FF                        cmp MTablero[bx-1], -1               ;Comprueba si la casilla tambien es una mina
+[ 919]    0A9C: 74 04                                 je sgteActSupIzq                        ;La hay. Pasa a la siguiente
+[ 920]        :                                       
+[ 921]        :                                       ;No hay mina
+[ 922]    0A9E: FE 87 1B 04                           inc MTablero[bx-1]                   ;Incrementa la posicion correspondiente al tablero para indicar que hay una mina mas a su alrededor
+[ 923]        :                                       
+[ 924]        :                                       
+[ 925]        :                                       ;Casilla superior izquierda
+[ 926]    0AA2:                                       sgteActSupIzq:
+[ 927]    0AA2: A0 DE 04                              mov al, fTablero                     ;Solo es necesario comprobar que se pueda subir una posicion
+[ 928]    0AA5: FE C8                                 dec al
+[ 929]    0AA7: 78 31                                 js  sgteActDer                       ;Fuera de los limites. Descartadas las posiciones superiores. Siguiente la posicion derecha
+[ 930]        :                                       
+[ 931]    0AA9: 80 BF 13 04 FF                        cmp MTablero[bx-9], -1
+[ 932]    0AAE: 74 04                                 je sgteActSup
+[ 933]        :                                       
+[ 934]    0AB0: FE 87 13 04                           inc MTablero[bx-9]
+[ 935]        :                                       
+[ 936]        :                                       
+[ 937]        :                                       ;Casilla superior
+[ 938]    0AB4:                                       sgteActSup:
+[ 939]    0AB4: A0 DE 04                              mov al, fTablero
+[ 940]    0AB7: FE C8                                 dec al
+[ 941]    0AB9: 78 1F                                 js sgteActDer                        ;Fuera de los limites. Descartadas las posiciones superiores. Siguiente la posicion derecha
+[ 942]        :                                       
+[ 943]    0ABB: 80 BF 14 04 FF                        cmp MTablero[bx-8], -1
+[ 944]    0AC0: 74 04                                 je sgteActSupDer
+[ 945]        :                                       
+[ 946]    0AC2: FE 87 14 04                           inc MTablero[bx-8]
+[ 947]        :                                       
+[ 948]        :                                       
+[ 949]        :                                       ;Casilla superior derecha
+[ 950]    0AC6:                                       sgteActSupDer:
+[ 951]    0AC6: A0 DF 04                              mov al, cTablero
+[ 952]    0AC9: FE C0                                 inc al
+[ 953]    0ACB: 3C 07                                 cmp al, 7                            ;Solo es necesario comprobar que se pueda desplazarte una posicion a la derecha
+[ 954]    0ACD: 7F 33                                 jg sgteActInf                        ;Fuera de los limites. Descartadas las posiciones derechas. Siguiente la posicion inferior
+[ 955]        :                                       
+[ 956]    0ACF: 80 BF 15 04 FF                        cmp MTablero[bx-7], -1
+[ 957]    0AD4: 74 04                                 je sgteActDer
+[ 958]        :                                       
+[ 959]    0AD6: FE 87 15 04                           inc MTablero[bx-7]
+[ 960]        :                                       
+[ 961]        :                                       
+[ 962]        :                                       ;Casilla derecha
+[ 963]    0ADA:                                       sgteActDer:
+[ 964]    0ADA: A0 DF 04                              mov al, cTablero
+[ 965]    0ADD: FE C0                                 inc al
+[ 966]    0ADF: 3C 07                                 cmp al, 7
+[ 967]    0AE1: 7F 1F                                 jg sgteActInf                        ;Fuera de los limites. Descartadas las posiciones derechas. Siguiente la posicion inferior
+[ 968]        :                                       
+[ 969]    0AE3: 80 BF 1D 04 FF                        cmp MTablero[bx+1], -1
+[ 970]    0AE8: 74 04                                 je sgteActInfDer
+[ 971]        :                                       
+[ 972]    0AEA: FE 87 1D 04                           inc MTablero[bx+1]
+[ 973]        :                                       
+[ 974]        :                                       
+[ 975]        :                                       ;Casilla inferior derecha
+[ 976]    0AEE:                                       sgteActInfDer:
+[ 977]    0AEE: A0 DE 04                              mov al, fTablero
+[ 978]    0AF1: FE C0                                 inc al
+[ 979]    0AF3: 3C 07                                 cmp al, 7                            ;Solo es necesario comprobar que se pueda bajar una posicion
+[ 980]    0AF5: 7F 31                                 jg finBInsMinas                      ;Fuera de los limites. Descartadas todas las posiciones inferiores. Se termina la iteracion. Todas las posiciones han sido exploradas
+[ 981]        :                                       
+[ 982]    0AF7: 80 BF 25 04 FF                        cmp MTablero[bx+9], -1
+[ 983]    0AFC: 74 04                                 je sgteActInf
+[ 984]        :                                       
+[ 985]    0AFE: FE 87 25 04                           inc MTablero[bx+9]
+[ 986]        :                                       
+[ 987]        :                                       
+[ 988]        :                                       ;Casilla inferior
+[ 989]    0B02:                                       sgteActInf:
+[ 990]    0B02: A0 DE 04                              mov al, fTablero
+[ 991]    0B05: FE C0                                 inc al
+[ 992]    0B07: 3C 07                                 cmp al, 7
+[ 993]    0B09: 7F 1D                                 jg finBInsMinas                      ;Fuera de los limites. Descartadas todas las posiciones inferiores. Se termina la iteracion. Todas las posiciones han sudo exploradas
+[ 994]        :                                       
+[ 995]    0B0B: 80 BF 24 04 FF                        cmp MTablero[bx+8], -1
+[ 996]    0B10: 74 04                                 je sgteActInfIzq
+[ 997]        :                                       
+[ 998]    0B12: FE 87 24 04                           inc MTablero[bx+8]
+[ 999]        :                                       
+[1000]        :                                       
+[1001]        :                                       ;Casilla inferior izquierda
+[1002]    0B16:                                       sgteActInfIzq:
+[1003]    0B16: A0 DF 04                              mov al, cTablero                     ;Solo es necesario comprobar que se pueda desplazar una posicion inferior
+[1004]    0B19: FE C8                                 dec al
+[1005]    0B1B: 78 0B                                 js finBInsMinas                      ;Fuera de los limites. Se termina la iteracion. Todas las posiciones han sido exploradas
+[1006]        :                                       
+[1007]    0B1D: 80 BF 23 04 FF                        cmp MTablero[bx+7], -1
+[1008]    0B22: 74 04                                 je finBInsMinas
+[1009]        :                                       
+[1010]    0B24: FE 87 23 04                           inc MTablero[bx+7]
+[1011]        :                                       
+[1012]        :                                       
+[1013]    0B28:                                       finBInsMinas:
+[1014]    0B28: 49 E3 03 E9 54 FF                     loop bInsMinas
+[1015]        :                                       
+[1016]    0B2E: 5E                                    pop si
+[1017]    0B2F: 59                                    pop cx
+[1018]    0B30: 5B                                    pop bx
+[1019]    0B31: 58                                    pop ax
+[1020]    0B32: C3                                    ret
+[1021]        :                                       InicializarTablero ENDP
+[1022]        :                                       
+[1023]        :                                       
+[1024]        :                                       ;F: Comprueba si una celda (SI) esta bloqueada o no y la bloquea o desbloquea incluida la salida por pantalla
+[1025]        :                                       ;E: SI posicion lineal para bloquear/desbloquear
+[1026]    0B33:                                       PosibleBloqueo PROC
+[1027]    0B33: 50                                    push ax                              ;Para almacenar el caracter a imprimir
+[1028]    0B34: 53                                    push bx                              ;Para el codigo de color
+[1029]        :                                       
+[1030]    0B35: 80 BC 5C 04 01                        cmp Destapado[si], 1                 ;Comprueba que la casilla no haya sido destapada
+[1031]    0B3A: 74 45                                 je  finBloq                             ;Si lo esta se termina el procedimiento
+[1032]    0B3C: 80 BC 9C 04 01                        cmp Bloqueado[si], 1                 ;No esta destapada. Comprueba su estado de bloqueo
+[1033]    0B41: 74 1A                                 je  desbloquear
+[1034]        :                                       
+[1035]        :                                       ;No esta bloqueada. Se bloquea
+[1036]    0B43: FE 84 9C 04                           inc Bloqueado[si]                    ;Actualiza el vector que almacena el estado de bloqueo de cada casilla
+[1037]    0B47: FE 06 E7 04                           inc casillasBloq                     ;Incrementa el contador de casillas bloqueadas
+[1038]        :                                       
+[1039]    0B4B: 80 BC 1C 04 FF                        cmp MTablero[si], -1                 ;Comprueba si a demas hay mina en la casilla recien bloqueada
+[1040]    0B50: 75 04                                 jne noIncMinasBloq                      ;No la hay. No se incrementa el contador 'minasBloq'
+[1041]        :                                       
+[1042]    0B52: FE 06 E8 04                           inc minasBloq                        ;Si la hay. Se incrementa el contador 'minasBloq'
+[1043]        :                                       
+[1044]    0B56:                                       noIncMinasBloq:
+[1045]    0B56: A0 E4 04                              mov al, carBloq                  ;Caracter de bloqueo
+[1046]    0B59: B3 47                                 mov bl, COLORBLOQUEADO           ;Color de bloqueo
+[1047]    0B5B: EB 18                                 jmp imprimirBloq
+[1048]        :                                       
+[1049]        :                                       ;Esta bloqueada. Se desbloquea
+[1050]    0B5D:                                       desbloquear:
+[1051]    0B5D: FE 8C 9C 04                           dec Bloqueado[si]                ;Actualiza el vector que almacena el estado de bloqueo de cada casilla
+[1052]    0B61: FE 0E E7 04                           dec casillasBloq                 ;Decrementa el contador de casillas bloqueadas
+[1053]        :                                       
+[1054]    0B65: 80 BC 1C 04 FF                        cmp MTablero[si], -1             ;Comprueba si a demas hay mina en la casilla recien desbloqueada
+[1055]    0B6A: 75 04                                 jne noDecMinasBloq                  ;No la hay. No se decrementa el contador de minas bloqueadas
+[1056]        :                                       
+[1057]    0B6C: FE 0E E8 04                           dec minasBloq                    ;Si la hay. Se decrementa el contador de minas bloqueadas
+[1058]        :                                       
+[1059]    0B70:                                       noDecMinasBloq:
+[1060]    0B70: A0 E5 04                              mov al, carEspa                  ;Caracter para borrar el caracter de bloqueo
+[1061]    0B73: 32 DB                                 xor bl, bl                       ;Color para dejar la casilla en negro
+[1062]        :                                       
+[1063]    0B75:                                       imprimirBloq:                        ;Imprime el caracter de bloqueo/espacio en funcion del estado anterior de bloqueo
+[1064]    0B75: E8 79 FE                              call TableroAPantalla
+[1065]    0B78: E8 66 FC                              call ColocarCursor
+[1066]    0B7B: E8 50 FC                              call ImprimeCarColor
+[1067]    0B7E: E8 09 FD                              call ImprimirBloqueadas          ;Actualiza el contador de casillas bloqueadas en pantalla
+[1068]        :                                       
+[1069]    0B81:                                       finBloq:
+[1070]    0B81: 5B                                    pop bx
+[1071]    0B82: 58                                    pop ax
+[1072]    0B83: C3                                    ret
+[1073]        :                                       PosibleBloqueo ENDP
+[1074]        :                                       
+[1075]        :                                       
+[1076]        :                                       ;F: Destapa la casilla indicada por el indice SI (si no esta bloqueada).
+[1077]        :                                       ;   Pinta el caracter de mina si la hay, o lanza DestaparRecursivo si es casilla vacia
+[1078]        :                                       ;E: SI es el indice de la casilla a destapar
+[1079]        :                                       ;S: hayMina = 1 si hay mina; hayMina = 0 si no la hay
+[1080]    0B84:                                       DestaparCasilla PROC
+[1081]    0B84: 50                                    push ax                             ;Para el caracter a imprimir
+[1082]    0B85: 53                                    push bx                             ;Para el codigo de color
+[1083]    0B86: 52                                    push dx                             ;Para cargar la direccion de la cadena de escritura en pantalla 'cadenaEsc' y para manipular la posicion del tablero
+[1084]        :                                       
+[1085]        :                                       ;Comprueba que la casilla no este bloqueada
+[1086]    0B87: 80 BC 9C 04 01                        cmp Bloqueado[si], 1
+[1087]    0B8C: 74 21                                 je finNoMina                        ;Esta bloqueada. No se hace nada
+[1088]        :                                       
+[1089]        :                                       ;No esta bloqueda la casilla. Comprueba si hay mina
+[1090]    0B8E: 80 BC 1C 04 FF                        cmp MTablero[si], -1
+[1091]    0B93: 74 05                                 je finHayMina                       ;Hay mina
+[1092]        :                                       
+[1093]        :                                       ;No hay mina. Se destapa y si no hay ninguna alrededor se destapan tambien las adyacentes y viceversa
+[1094]    0B95: E8 20 00                              call DestaparRecursivo
+[1095]    0B98: EB 15                                 jmp finNoMina
+[1096]        :                                       
+[1097]    0B9A:                                       finHayMina:
+[1098]        :                                       ;Asigna los parametros para llamar a 'ImprimeCarColor'
+[1099]    0B9A: A0 E3 04                              mov al, carMina
+[1100]    0B9D: 32 DB                                 xor bl, bl
+[1101]        :                                       ;Coloca el cursor para imprimir la mina en la casilla destapada (indicada por la posicion del raton)
+[1102]    0B9F: E8 4F FE                              call TableroAPantalla
+[1103]    0BA2: E8 3C FC                              call ColocarCursor
+[1104]    0BA5: E8 26 FC                              call ImprimeCarColor
+[1105]        :                                       
+[1106]    0BA8: C6 06 E6 04 01                        mov hayMina, 1                  ;Actualiza la bandera de condicion de final de partida
+[1107]    0BAD: EB 05                                 jmp final
+[1108]        :                                       
+[1109]    0BAF:                                       finNoMina:
+[1110]    0BAF: C6 06 E6 04 00                        mov hayMina, 0                  ;Actualiza la bandera de condicion de final de partida
+[1111]        :                                       
+[1112]    0BB4:                                       final:                              ;Libera la memoria reservada en pila
+[1113]    0BB4: 5A                                    pop dx
+[1114]    0BB5: 5B                                    pop bx
+[1115]    0BB6: 58                                    pop ax
+[1116]    0BB7: C3                                    ret
+[1117]        :                                       DestaparCasilla ENDP
+[1118]        :                                       
+[1119]        :                                       
+[1120]        :                                       ;F: Destapa de manera recursiva todas las casillas contiguas a una dada inicialmente por SI
+[1121]        :                                       ;E: SI indica el indice lineal de la casilla a destapar
+[1122]        :                                       ;E: destapadas
+[1123]        :                                       ;S: destapadas
+[1124]    0BB8:                                       DestaparRecursivo PROC
+[1125]    0BB8: 80 BC 5C 04 01                        cmp Destapado[si], 1                 ;Comprueba que la casilla no este destapada
+[1126]    0BBD: 75 03 E9 29 01                        je finRec                            ;Lo esta. Finaliza la recursion
+[1127]        :                                       
+[1128]    0BC2: 80 BC 9C 04 01                        cmp Bloqueado[si], 1                 ;Comprueba que la casilla no este bloqueada
+[1129]    0BC7: 75 03 E9 1F 01                        je finRec                            ;Lo esta. Finaliza la recursion
+[1130]        :                                       
+[1131]        :                                       ;Se puede destapar la casilla. No esta ni destapada ni bloqueada
+[1132]        :                                       ;Codigo comun a si hay mina alrededor o no
+[1133]    0BCC: B3 72                                 mov bl, COLORDESTAPADO               ;Asigna el codigo de color
+[1134]        :                                       ;Coloca el cursor para imprimir el numero de minas adyacentes en la casilla destapda (indicada por la posicion del tablero)
+[1135]    0BCE: E8 20 FE                              call TableroAPantalla
+[1136]    0BD1: E8 0D FC                              call ColocarCursor
+[1137]        :                                       
+[1138]        :                                       ;Actualiza el contador y el vector de casillas destapadas
+[1139]    0BD4: FE 84 5C 04                           inc Destapado[si]
+[1140]    0BD8: FE 06 E9 04                           inc destapadas
+[1141]        :                                       
+[1142]    0BDC: 80 BC 1C 04 00                        cmp MTablero[si], 0                  ;Comprueba si hay mina alrededor
+[1143]    0BE1: 7E 03 E9 F3 00                        jg imprimeNumero
+[1144]        :                                       
+[1145]        :                                       ;No hay mina alrededor. Se imprime un caracter en blanco y se destapan las adyacentes
+[1146]    0BE6: B0 20                                 mov al, ' '
+[1147]    0BE8: E8 E3 FB                              call ImprimeCarColor
+[1148]        :                                       
+[1149]        :                                       ;Se llama recursivamente al procedimiento para DESTAPAR LAS CASILLAS ADYACENTES
+[1150]        :                                       ;Pero primero hay que comprobar que casillas son potencialmente destapables comparando con los limites del tablero
+[1151]        :                                       
+[1152]        :                                       ;Destapa la casilla izquierda
+[1153]    0BEB: 8A 16 DF 04                           mov dl, cTablero
+[1154]    0BEF: FE CA                                 dec dl
+[1155]    0BF1: 78 2E                                 js sgteSup                           ;Fuera de los limites. Descartadas las posiciones izquierdas. Siguiente la posicion superior
+[1156]        :                                       
+[1157]        :                                       ;Actualiza las variables para la llamada recursiva
+[1158]    0BF3: FE 0E DF 04                           dec cTablero
+[1159]    0BF7: 4E                                    dec si
+[1160]    0BF8: E8 BD FF                              call DestaparRecursivo
+[1161]        :                                       ;Deshace los cambios para volver a la posicion desde la que se llamo
+[1162]    0BFB: 46                                    inc si
+[1163]    0BFC: FE 06 DF 04                           inc cTablero
+[1164]        :                                       
+[1165]        :                                       
+[1166]        :                                       ;Destapa la casilla superior izquierda
+[1167]    0C00:                                       sgteIzqSup:
+[1168]    0C00: 8A 16 DE 04                           mov dl, fTablero
+[1169]    0C04: FE CA                                 dec dl                               ;Solo hace falta comprobar que se pueda subir
+[1170]    0C06: 78 56                                 js sgteDer                           ;Fuera de los limites. Descartadas las posiciones superiores. Siguiente la posicion derecha
+[1171]        :                                       
+[1172]    0C08: FE 0E DF 04                           dec cTablero
+[1173]    0C0C: FE 0E DE 04                           dec fTablero
+[1174]    0C10: 83 EE 09                              sub si, 9
+[1175]    0C13: E8 A2 FF                              call DestaparRecursivo
+[1176]    0C16: 83 C6 09                              add si, 9
+[1177]    0C19: FE 06 DE 04                           inc fTablero
+[1178]    0C1D: FE 06 DF 04                           inc cTablero
+[1179]        :                                       
+[1180]        :                                       
+[1181]        :                                       ;Destapa la casilla superior
+[1182]    0C21:                                       sgteSup:
+[1183]    0C21: 8A 16 DE 04                           mov dl, fTablero
+[1184]    0C25: FE CA                                 dec dl
+[1185]    0C27: 78 35                                 js sgteDer                          ;Fuera de los limites. Descartadas las posiciones superiores. Siguiente la posicion derecha
+[1186]        :                                       
+[1187]    0C29: FE 0E DE 04                           dec fTablero
+[1188]    0C2D: 83 EE 08                              sub si, 8
+[1189]    0C30: E8 85 FF                              call DestaparRecursivo
+[1190]    0C33: 83 C6 08                              add si, 8
+[1191]    0C36: FE 06 DE 04                           inc fTablero
+[1192]        :                                       
+[1193]        :                                       
+[1194]        :                                       ;Destapa la casilla superior derecha
+[1195]    0C3A:                                       sgteSupDer:
+[1196]    0C3A: 8A 16 DF 04                           mov dl, cTablero
+[1197]    0C3E: FE C2                                 inc dl
+[1198]    0C40: 80 FA 07                              cmp dl, 7                           ;Solo hace falta comprobar que se pueda avanzar hacia la derecha
+[1199]    0C43: 7F 55                                 jg sgteInf                          ;Fuera de los limites. Se descartan las posiciones derechas. Siguiente la posicion inferior
+[1200]        :                                       
+[1201]    0C45: FE 06 DF 04                           inc cTablero
+[1202]    0C49: FE 0E DE 04                           dec fTablero
+[1203]    0C4D: 83 EE 07                              sub si, 7
+[1204]    0C50: E8 65 FF                              call DestaparRecursivo
+[1205]    0C53: 83 C6 07                              add si, 7
+[1206]    0C56: FE 06 DE 04                           inc fTablero
+[1207]    0C5A: FE 0E DF 04                           dec cTablero
+[1208]        :                                       
+[1209]        :                                       
+[1210]        :                                       ;Destapa la casilla derecha
+[1211]    0C5E:                                       sgteDer:
+[1212]    0C5E: 8A 16 DF 04                           mov dl, cTablero
+[1213]    0C62: FE C2                                 inc dl
+[1214]    0C64: 80 FA 07                              cmp dl, 7
+[1215]    0C67: 7F 31                                 jg sgteInf                          ;Fuera de los limites. Se descartan las posiciones derechas. Siguiente la posicion inferior
+[1216]        :                                       
+[1217]    0C69: FE 06 DF 04                           inc cTablero
+[1218]    0C6D: 46                                    inc si
+[1219]    0C6E: E8 47 FF                              call DestaparRecursivo
+[1220]    0C71: 4E                                    dec si
+[1221]    0C72: FE 0E DF 04                           dec cTablero
+[1222]        :                                       
+[1223]        :                                       
+[1224]        :                                       ;Destapa la casilla inferior derecha
+[1225]    0C76:                                       sgteInfDer:
+[1226]    0C76: 8A 16 DE 04                           mov dl, fTablero
+[1227]    0C7A: FE C2                                 inc dl
+[1228]    0C7C: 80 FA 07                              cmp dl, 7                           ;Solo hace falta comprobar que se pueda bajar
+[1229]    0C7F: 7F 6A                                 jg finRec                           ;Fuera de los limites. Se termina la recursividad. Todas las posiciones han sido exploradas
+[1230]        :                                       
+[1231]    0C81: FE 06 DF 04                           inc cTablero
+[1232]    0C85: FE 06 DE 04                           inc fTablero
+[1233]    0C89: 83 C6 09                              add si, 9
+[1234]    0C8C: E8 29 FF                              call DestaparRecursivo
+[1235]    0C8F: 83 EE 09                              sub si, 9
+[1236]    0C92: FE 0E DE 04                           dec fTablero
+[1237]    0C96: FE 0E DF 04                           dec cTablero
+[1238]        :                                       
+[1239]        :                                       
+[1240]        :                                       ;Destapa la casilla inferior
+[1241]    0C9A:                                       sgteInf:
+[1242]    0C9A: 8A 16 DE 04                           mov dl, fTablero
+[1243]    0C9E: FE C2                                 inc dl
+[1244]    0CA0: 80 FA 07                              cmp dl, 7
+[1245]    0CA3: 7F 46                                 jg finRec                           ;Fuera de los limites. Se termina la recursividad. Todas las posiciones han sido exploradas
+[1246]        :                                       
+[1247]    0CA5: FE 06 DE 04                           inc fTablero
+[1248]    0CA9: 83 C6 08                              add si, 8
+[1249]    0CAC: E8 09 FF                              call DestaparRecursivo
+[1250]    0CAF: 83 EE 08                              sub si, 8
+[1251]    0CB2: FE 0E DE 04                           dec fTablero
+[1252]        :                                       
+[1253]        :                                       
+[1254]        :                                       ;Destapa la casilla inferior izquierda
+[1255]    0CB6:                                       sgteInfIzq:
+[1256]    0CB6: 8A 16 DF 04                           mov dl, cTablero
+[1257]    0CBA: FE CA                                 dec dl                               ;Solo hace falta comprobar que se pueda avanzar hacia la izquierda
+[1258]    0CBC: 78 2D                                 js finRec                            ;Fuera de los limites. Se termina la recursividad. Todas las posiciones han sido exploradas
+[1259]        :                                       
+[1260]    0CBE: FE 0E DF 04                           dec cTablero
+[1261]    0CC2: FE 06 DE 04                           inc fTablero
+[1262]    0CC6: 83 C6 07                              add si, 7
+[1263]    0CC9: E8 EC FE                              call DestaparRecursivo
+[1264]    0CCC: 83 EE 07                              sub si, 7
+[1265]    0CCF: FE 0E DE 04                           dec fTablero
+[1266]    0CD3: FE 06 DF 04                           inc cTablero
+[1267]        :                                       
+[1268]    0CD7: EB 12                                 jmp finRec
+[1269]        :                                       
+[1270]        :                                       
+[1271]    0CD9:                                       imprimeNumero:                       ;Hay mina alrededor. Se imprime el numero de minas y finaliza la recursion
+[1272]        :                                       ;Convierte el numero almacenado en el vector MTablero a una cadena para su impresion en el tablero
+[1273]    0CD9: 8A 84 1C 04                           mov al, MTablero[si]
+[1274]    0CDD: 32 E4                                 xor ah, ah
+[1275]    0CDF: BA EB 04                              lea dx, cadenaEsc
+[1276]    0CE2: E8 4C FA                              call NumeroACadena
+[1277]        :                                       ;Asigna los parametros para llamar a 'ImprimeCarColor'
+[1278]    0CE5: A0 EB 04                              mov al, cadenaEsc
+[1279]    0CE8: E8 E3 FA                              call ImprimeCarColor
+[1280]        :                                       
+[1281]    0CEB:                                       finRec:
+[1282]    0CEB: C3                                    ret
+[1283]        :                                       DestaparRecursivo ENDP
+[1284]        :                                       
+[1285]        :                                       
+[1286]        :                                       ;F: Comprueba si existen las condiciones de fin de partida:
+[1287]        :                                       ;S: fin=3
+[1288]    0CEC:                                       CompruebaFinPartidaGanada PROC
+[1289]    0CEC: 50                                    push ax
+[1290]        :                                       
+[1291]    0CED: A1 94 02                              mov ax, TotalCasillas   ;Si NumMinas + destapadas = TotalCasillas ha ganado
+[1292]    0CF0: 2A 06 E9 04                           sub al, destapadas
+[1293]    0CF4: 3A 06 96 02                           cmp al, NumMinas
+[1294]    0CF8: 75 05                                 jne SalirCompruebaFin
+[1295]        :                                       
+[1296]        :                                       ;ganado
+[1297]    0CFA: C6 06 EA 04 03                        mov fin, 3
+[1298]        :                                       
+[1299]    0CFF:                                       SalirCompruebaFin:
+[1300]    0CFF: 58                                    pop ax
+[1301]    0D00: C3                                    ret
+[1302]        :                                       CompruebaFinPartidaGanada ENDP
+[1303]        :                                       
+[1304]        :                                       
+[1305]        :                                       ;********************************* PRINCIPAL ***********************************
+[1306]        :                                       
+[1307]    0D01:                                       start:
+[1308]        :                                       ;Inicializacion de los segmentos de datos y extra
+[1309]    0D01: B8 01 00                              mov ax, data
+[1310]    0D04: 8E D8                                 mov ds, ax
+[1311]    0D06: 8E C0                                 mov es, ax
+[1312]        :                                       
+[1313]    0D08: EB 03                                 jmp inicializarPartida              ;Solo se ejecuta en la primera partida
+[1314]        :                                       
+[1315]    0D0A:                                       recargarJuego:                      ;Al inicio de cada partida se comprueba las condiciones de recarga de partida indicadas por el usuario
+[1316]    0D0A: E8 29 FD                              call ResetVariables             ;Se ha elegido volver a jugar una nueva partida, por lo que hay que reinicializar las variables. El PROC InicializarEntorno maneja la inicializacion del tablero bajo estas condiciones
+[1317]        :                                       
+[1318]    0D0D:                                       inicializarPartida:
+[1319]    0D0D: E8 30 FB                              call InicializarEntorno         ;Inicializa el entorno grafico y pide al usuario el tablero a cargar. Se ejecuta siempre que se inicie una nueva partida
+[1320]        :                                       
+[1321]    0D10:                                       bLogicaJuego:                       ;Bucle que maneja la logica del juego en cada iteracion
+[1322]    0D10: E8 54 FC                              call EsperarClic
+[1323]    0D13: E8 8F FC                              call PosicionRatonValida        ;Evalua la posicion del puntero del raton
+[1324]        :                                       
+[1325]    0D16: 80 3E E2 04 01                        cmp botones, 1                  ;Comprueba el boton pulsado
+[1326]    0D1B: 74 0F                                 je clicIzq
+[1327]        :                                       
+[1328]        :                                       ;Codigo para eventos de ClicDerecho
+[1329]    0D1D: 84 C0                                 test al, al                     ;Comprueba la validez del clic
+[1330]    0D1F: 74 39                                 jz sgteLogicaJuego              ;Clic invalido
+[1331]        :                                       
+[1332]        :                                       ;Clic valido
+[1333]        :                                       ;Conversion de coordenadas
+[1334]    0D21: E8 B0 FC                              call PantallaATablero
+[1335]    0D24: E8 E7 FC                              call CalculaIndiceLineal
+[1336]    0D27: E8 09 FE                              call PosibleBloqueo
+[1337]        :                                       
+[1338]    0D2A: EB 2E                                 jmp sgteLogicaJuego
+[1339]        :                                       
+[1340]        :                                       ;Codigo para eventos de ClicIzquierdo
+[1341]    0D2C:                                       clicIzq:
+[1342]    0D2C: 84 C0                                 test al, al                     ;Comprueba la validez de la posicion del puntero del raton
+[1343]    0D2E: 74 17                                 jz posibleSalida
+[1344]        :                                       
+[1345]        :                                       ;Clic valido. Se intenta destapar la casilla clicada
+[1346]        :                                       ;Conversion de coordenadas
+[1347]    0D30: E8 A1 FC                              call PantallaATablero
+[1348]    0D33: E8 D8 FC                              call CalculaIndiceLineal
+[1349]    0D36: E8 4B FE                              call DestaparCasilla
+[1350]        :                                       
+[1351]    0D39: 80 3E E6 04 00                        cmp hayMina, 0                  ;Comprueba si se ha destapado una mina
+[1352]    0D3E: 74 1A                                 je sgteLogicaJuego              ;No se ha destapado. Siguiente 'tick'
+[1353]        :                                       
+[1354]        :                                       ;Se ha destapado una mina. Se actualiza la bandera para indicar que el jugador ha perdido la partida
+[1355]    0D40: C6 06 EA 04 02                        mov fin, 2
+[1356]    0D45: EB 13                                 jmp sgteLogicaJuego
+[1357]        :                                       
+[1358]        :                                       ;Clic invalido. Es posible que se haya pulsado la cruz ('X') para finalizar la partida
+[1359]    0D47:                                       posibleSalida:
+[1360]    0D47: 80 3E E1 04 00                        cmp cRaton, 0               ;Comprueba la coordenada X. Si es la esquina superior izquierda (cruz 'X') es 0
+[1361]    0D4C: 75 0C                                 jne sgteLogicaJuego
+[1362]        :                                       
+[1363]    0D4E: 80 3E E0 04 00                        cmp fRaton, 0               ;Comrpueba que ademas la coordenada Y tambien sea 0 para determinar que se ha pulsado en la cruz
+[1364]    0D53: 75 05                                 jne sgteLogicaJuego
+[1365]        :                                       
+[1366]    0D55: C6 06 EA 04 01                        mov fin, 1
+[1367]        :                                       
+[1368]    0D5A:                                       sgteLogicaJuego:                   ;Manejador de finalizacion/'tick' de la partida
+[1369]    0D5A: E8 8F FF                              call CompruebaFinPartidaGanada  ;Actualiza la bandera 'fin' si el jugador ha ganado
+[1370]    0D5D: 80 3E EA 04 00                        cmp fin, 0                      ;Si fin=0 se pasa al siguiente 'tick'
+[1371]    0D62: 74 AC                                 je bLogicaJuego
+[1372]        :                                       
+[1373]        :                                       ;Se ha terminado la partida
+[1374]    0D64: E8 56 FB                              call ContinuarOnoJuego          ;Comprueba las condiciones de fin y muestra los mensajes correspondientes
+[1375]        :                                       
+[1376]    0D67: 80 3E EE 04 00                        cmp NPartida, 0                 ;Maneja la finalizacion del programa. Si no se termina, se recarga el juego
+[1377]    0D6C: 75 9C                                 jne recargarJuego
+[1378]        :                                       
+[1379]        :                                       ;Fin del programa
+[1380]    0D6E: B4 4C                                 mov ah, 4ch
+[1381]    0D70: CD 21                                 int 21h
+[1382]        :                                       
+[1383]        :                                       code ends
+[1384]        :                                       
+[1385]        :                                       END start
+[1386]        :                                       
+[1387]        :                                       
+ 
+===================================================================================================
+ 
+EXE HEADER - bytes from 0000 to 01FF inclusive.
+
+0000: 4D      -   exe signature (M)
+0001: 5A      -   exe signature (Z)
+0002: 72      -   bytes on last page (l.byte)
+0003: 01      -   bytes on last page (h.byte)
+0004: 08      -   512 byte pages in file (l.byte)
+0005: 00      -   512 byte pages in file (h.byte)
+0006: 01      -   relocations (l.byte)
+0007: 00      -   relocations (h.byte)
+0008: 20      -   paragraphs in header (l.byte)
+0009: 00      -   paragraphs in header (h.byte)
+000A: 00      -   minimum memory (l.byte)
+000B: 00      -   minimum memory (h.byte)
+000C: FF      -   maximum memory (l.byte)
+000D: FF      -   maximum memory (h.byte)
+000E: 50      -   SS - stack segment (l.byte)
+000F: 00      -   SS - stack segment (h.byte)
+0010: 00      -   SP - stack pointer (l.byte)
+0011: 02      -   SP - stack pointer (h.byte)
+0012: DD      -   check sum (l.byte)
+0013: 5E      -   check sum (h.byte)
+0014: 01      -   IP - instruction pointer (l.byte)
+0015: 06      -   IP - instruction pointer (h.byte)
+0016: 70      -   CS - code segment (l.byte)
+0017: 00      -   CS - code segment (h.byte)
+0018: 1E      -   relocation table adress (l.byte)
+0019: 00      -   relocation table adress (h.byte)
+001A: 00      -   overlay number (l.byte)
+001B: 00      -   overlay number (h.byte)
+001C: 01      -   signature (l.byte)
+001D: 00      -   signature (h.byte)
+001E: 02      -   relocation table - offset inside segment (l.byte)
+001F: 06      -   relocation table - offset inside segment (h.byte)
+0020: 70      -   relocation table - segment anchor (l.byte)
+0021: 00      -   relocation table - segment anchor (h.byte)
+0022 to 01FF  -   reserved relocation area  (00) 
+
+
+
+
+===================================================================================================
